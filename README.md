@@ -53,6 +53,31 @@ Learn more at [docs.all-hands.dev](https://docs.all-hands.dev), or [sign up for 
 The easiest way to get started with OpenHands is on [OpenHands Cloud](https://app.all-hands.dev),
 which comes with $20 in free credits for new users.
 
+## 🎨 OpenHands Studio
+
+OpenHands Studio is a visual, voice-enabled interface for running and observing autonomous agents without touching the CLI. Designed for non-technical users, power users, and operators, Studio provides:
+
+- **Fleet Dashboard**: Manage multiple repositories with visual status tracking
+- **Real-time Agent Observability**: Watch agents work with live timelines and container views
+- **Voice Interface**: Control agents with push-to-talk commands and receive voice notifications
+- **One-Click Approvals**: Review and approve PRs with visual diffs and scorecards
+- **Computer Use Agents**: First-class integration for UI automation and visual tasks
+
+Studio is enabled by default. Learn more in [docs/studio.md](docs/studio.md).
+
+### Quick Start with Studio
+
+```bash
+# Using Docker Compose
+docker-compose -f docker-compose.studio.yml up
+
+# Or with environment variable
+export STUDIO_ENABLED=true
+uvx --python 3.12 --from openhands-ai openhands serve
+```
+
+Visit [http://localhost:3000](http://localhost:3000) to access the Studio interface.
+
 ## 💻 Running OpenHands Locally
 
 ### Option 1: CLI Launcher (Recommended)
