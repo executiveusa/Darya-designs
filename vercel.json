@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/build",
+  "env": {
+    "VITE_BACKEND_BASE_URL": "localhost:3000",
+    "VITE_BACKEND_HOST": "127.0.0.1:3000",
+    "VITE_MOCK_API": "true",
+    "VITE_MOCK_SAAS": "true",
+    "VITE_USE_TLS": "false",
+    "VITE_FRONTEND_PORT": "3001",
+    "VITE_INSECURE_SKIP_VERIFY": "false",
+    "NODE_VERSION": "22.0.0"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
