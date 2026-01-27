@@ -1,0 +1,11 @@
+# Python backend - not deployed to Vercel
+openhands/
+openhands-cli/
+openhands-ui/
+tests/
+pyproject.toml
+poetry.lock
+*.py
+
+# Keep only the frontend
+!frontend/
