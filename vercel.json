@@ -2,7 +2,7 @@
   "version": 2,
   "name": "openhands-studio",
   "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/build/client",
+  "outputDirectory": "frontend/build",
   "installCommand": "cd frontend && npm install",
   "framework": null,
   "devCommand": "cd frontend && npm run dev",
