@@ -9,6 +9,7 @@ export const useCurrentUsage = () => {
     queryKey: ["usage", conversationId],
     queryFn: () => ConversationService.getCurrentUsage(conversationId!),
     enabled: Boolean(conversationId),
-    refetchInterval: 1500,
+    // Reduced from 1.5s to 5s to reduce backend load
+    refetchInterval: 5000,
   });
 };

@@ -24,7 +24,7 @@ def _normalize_profile_name(profile_name: str | None) -> str | None:
         return None
     if not re.fullmatch(r"[a-z0-9_-]+", lowered):
         logger.warning(
-            "Agent profile name contains invalid characters; skipping profile load.",
+            "Agent profile name contains invalid characters. Only lowercase letters, numbers, hyphens, and underscores are allowed.",
             extra={"profile": profile_name},
         )
         return None

@@ -58,20 +58,24 @@ class WorkflowNotifier:
         if not self._tts_api_key:
             return None
         if self._tts_provider == "elevenlabs":
+            # ElevenLabs requires voice_id in the URL path
+            voice_id = self._tts_voice or "21m00Tcm4TlvDq8ikWAM"  # Default voice
             response = requests.post(
-                "https://api.elevenlabs.io/v1/text-to-speech",
+                f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
                 headers={"xi-api-key": self._tts_api_key},
-                json={"text": message, "voice": self._tts_voice},
+                json={"text": message},
                 timeout=30,
             )
             response.raise_for_status()
             audio = response.content
             return base64.b64encode(audio).decode("utf-8")
         if self._tts_provider == "openai":
+            # OpenAI TTS models are 'tts-1' and 'tts-1-hd', not 'gpt-4o-mini-tts'
+            voice = self._tts_voice or "alloy"  # Default voice
             response = requests.post(
                 "https://api.openai.com/v1/audio/speech",
                 headers={"Authorization": f"Bearer {self._tts_api_key}"},
-                json={"model": "gpt-4o-mini-tts", "voice": self._tts_voice, "input": message},
+                json={"model": "tts-1", "voice": voice, "input": message},
                 timeout=30,
             )
             response.raise_for_status()

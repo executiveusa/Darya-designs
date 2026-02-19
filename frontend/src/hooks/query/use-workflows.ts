@@ -28,7 +28,15 @@ export function useWorkflowRun(runId: string | null) {
     queryKey: ["workflow-run", runId],
     queryFn: () => WorkflowsService.getRun(runId || ""),
     enabled: Boolean(runId),
-    refetchInterval: 2000,
+    // Disable polling when workflow is in a terminal state
+    refetchInterval: (query) => {
+      const data = query.state.data as any;
+      const status = data?.status;
+      const terminalStatuses = ["completed", "failed", "rejected", "canceled"];
+      
+      // Stop polling if status is terminal, otherwise poll every 2 seconds
+      return status && terminalStatuses.includes(status) ? false : 2000;
+    },
   });
 }
 
