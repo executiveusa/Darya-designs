@@ -20,6 +20,8 @@ class ServerConfig(ServerConfigInterface):
     github_client_id = os.environ.get('GITHUB_APP_CLIENT_ID', '')
     enable_billing = os.environ.get('ENABLE_BILLING', 'false') == 'true'
     hide_llm_settings = os.environ.get('HIDE_LLM_SETTINGS', 'false') == 'true'
+    voice_enabled = os.environ.get('VOICE_ENABLED', 'true') == 'true'
+    cost_visibility = os.environ.get('COST_VISIBILITY', 'true') == 'true'
     # This config is used to hide the microagent management page from the users for now. We will remove this once we release the new microagent management page.
     settings_store_class: str = (
         'openhands.storage.settings.file_settings_store.FileSettingsStore'
@@ -49,9 +51,13 @@ class ServerConfig(ServerConfigInterface):
             'APP_MODE': self.app_mode,
             'GITHUB_CLIENT_ID': self.github_client_id,
             'POSTHOG_CLIENT_KEY': self.posthog_client_key,
+            'PUBLIC_APP_NAME': os.getenv('PUBLIC_APP_NAME', ''),
+            'PUBLIC_DEFAULT_MODEL': os.getenv('PUBLIC_DEFAULT_MODEL', ''),
             'FEATURE_FLAGS': {
                 'ENABLE_BILLING': self.enable_billing,
                 'HIDE_LLM_SETTINGS': self.hide_llm_settings,
+                'VOICE_ENABLED': self.voice_enabled,
+                'COST_VISIBILITY': self.cost_visibility,
             },
         }
 

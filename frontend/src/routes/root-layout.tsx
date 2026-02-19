@@ -26,6 +26,10 @@ import { useReoTracking } from "#/hooks/use-reo-tracking";
 import { useSyncPostHogConsent } from "#/hooks/use-sync-posthog-consent";
 import { LOCAL_STORAGE_KEYS } from "#/utils/local-storage";
 import { EmailVerificationGuard } from "#/components/features/guards/email-verification-guard";
+import { MaintenanceBanner } from "#/components/features/maintenance/maintenance-banner";
+import { UsageIndicator } from "#/components/features/usage/usage-indicator";
+import { ModelPresetSelector } from "#/components/features/model-presets/model-preset-selector";
+import { Hotpad } from "#/components/features/hotpad/hotpad";
 import { AlertBanner } from "#/components/features/alerts/alert-banner";
 import { cn, isMobileDevice } from "#/utils/utils";
 import { LoadingSpinner } from "#/components/shared/loading-spinner";
@@ -226,6 +230,14 @@ export default function MainApp() {
       <Sidebar />
 
       <div className="flex flex-col w-full h-[calc(100%-50px)] md:h-full gap-3">
+        {config.data?.MAINTENANCE && (
+          <MaintenanceBanner startTime={config.data.MAINTENANCE.startTime} />
+        )}
+        <UsageIndicator defaultModel={config.data?.PUBLIC_DEFAULT_MODEL} />
+        <div className="px-4 py-2 flex flex-wrap items-center gap-3 border-b border-base-700 bg-white/5 backdrop-blur">
+          <ModelPresetSelector />
+          <Hotpad />
+        </div>
         {config.data &&
           (config.data.maintenance_start_time ||
             (config.data.faulty_models &&

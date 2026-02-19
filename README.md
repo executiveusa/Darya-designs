@@ -26,6 +26,126 @@
 
 </div>
 
+Welcome to OpenHands (formerly OpenDevin), a platform for software development agents powered by AI.
+
+OpenHands agents can do anything a human developer can: modify code, run commands, browse the web,
+call APIs, and yes—even copy code snippets from StackOverflow.
+
+Learn more at [docs.all-hands.dev](https://docs.all-hands.dev), or [sign up for OpenHands Cloud](https://app.all-hands.dev) to get started.
+
+
+> [!IMPORTANT]
+> **Upcoming change**: We are renaming our GitHub Org from `All-Hands-AI` to `OpenHands` on October 20th, 2025.
+> Check the [tracking issue](https://github.com/All-Hands-AI/OpenHands/issues/11376) for more information.
+
+
+> [!IMPORTANT]
+> Using OpenHands for work? We'd love to chat! Fill out
+> [this short form](https://docs.google.com/forms/d/e/1FAIpQLSet3VbGaz8z32gW9Wm-Grl4jpt5WgMXPgJ4EDPVmCETCBpJtQ/viewform)
+> to join our Design Partner program, where you'll get early access to commercial features and the opportunity to provide input on our product roadmap.
+
+## ☁️ OpenHands Cloud
+The easiest way to get started with OpenHands is on [OpenHands Cloud](https://app.all-hands.dev),
+which comes with $20 in free credits for new users.
+
+## 💻 Running OpenHands Locally
+
+### Option 1: CLI Launcher (Recommended)
+
+The easiest way to run OpenHands locally is using the CLI launcher with [uv](https://docs.astral.sh/uv/). This provides better isolation from your current project's virtual environment and is required for OpenHands' default MCP servers.
+
+**Install uv** (if you haven't already):
+
+See the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) for the latest installation instructions for your platform.
+
+**Launch OpenHands**:
+```bash
+# Launch the GUI server
+uvx --python 3.12 --from openhands-ai openhands serve
+
+# Or launch the CLI
+uvx --python 3.12 --from openhands-ai openhands
+```
+
+You'll find OpenHands running at [http://localhost:3000](http://localhost:3000) (for GUI mode)!
+
+### Option 2: Docker
+
+<details>
+<summary>Click to expand Docker command</summary>
+
+You can also run OpenHands directly with Docker:
+
+```bash
+docker pull docker.all-hands.dev/openhands/runtime:0.59-nikolaik
+
+docker run -it --rm --pull=always \
+    -e SANDBOX_RUNTIME_CONTAINER_IMAGE=docker.all-hands.dev/openhands/runtime:0.59-nikolaik \
+    -e LOG_ALL_EVENTS=true \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v ~/.openhands:/.openhands \
+    -p 3000:3000 \
+    --add-host host.docker.internal:host-gateway \
+    --name openhands-app \
+    docker.all-hands.dev/openhands/openhands:0.59
+```
+
+</details>
+
+> **Note**: If you used OpenHands before version 0.44, you may want to run `mv ~/.openhands-state ~/.openhands` to migrate your conversation history to the new location.
+
+> [!WARNING]
+> On a public network? See our [Hardened Docker Installation Guide](https://docs.all-hands.dev/usage/runtimes/docker#hardened-docker-installation)
+> to secure your deployment by restricting network binding and implementing additional security measures.
+
+### Option 3: LiteLLM + Zhipu (self-hosted)
+
+This repository includes a LiteLLM-only control plane configured for Zhipu models.
+
+**Prerequisites**
+- Docker + Docker Compose
+
+**Setup**
+```bash
+cp .env.example .env
+# Edit .env and set ZAI_API_KEY
+
+docker compose up --build
+```
+
+**Verify LiteLLM usage**
+- LiteLLM should be reachable at `http://localhost:4000/health`.
+- OpenHands should be reachable at `http://localhost:3000`.
+- LLM config is controlled by `.env` (`LLM_BASE_URL` + `DEFAULT_MODEL`).
+
+**Verify token usage**
+```bash
+curl "http://localhost:3000/api/usage/current?session_id=<conversation_id>"
+```
+
+**Switch models**
+Update `DEFAULT_MODEL` (and `PUBLIC_DEFAULT_MODEL`) in `.env`, then restart:
+```bash
+docker compose up --build
+```
+
+### Getting Started
+
+When you open the application, you'll be asked to choose an LLM provider and add an API key.
+For the LiteLLM + Zhipu setup above, the default preset targets `glm-4.7` and its related coding
+family, but you still have [many options](https://docs.all-hands.dev/usage/llms).
+
+See the [Running OpenHands](https://docs.all-hands.dev/usage/installation) guide for
+system requirements and more information.
+
+## 💡 Other ways to run OpenHands
+
+> [!WARNING]
+> OpenHands is meant to be run by a single user on their local workstation.
+> It is not appropriate for multi-tenant deployments where multiple users share the same instance. There is no built-in authentication, isolation, or scalability.
+>
+> If you're interested in running OpenHands in a multi-tenant environment, check out the source-available, commercially-licensed
+> [OpenHands Cloud Helm Chart](https://github.com/openHands/OpenHands-cloud)
 <hr>
 
 🙌 Welcome to OpenHands, a [community](COMMUNITY.md) focused on AI-driven development. We’d love for you to [join us on Slack](https://dub.sh/openhands).
@@ -69,10 +189,28 @@ OpenHands Enterprise can also work with the CLI and SDK above.
 OpenHands Enterprise is source-available--you can see all the source code here in the enterprise/ directory,
 but you'll need to purchase a license if you want to run it for more than one month.
 
+## 🧰 Ralphie CLI demo (external)
+
+If you want to follow the Ralphie CLI walkthrough referenced in the video transcript, start with the
+repository at [michaelshimeles/ralphy](https://github.com/michaelshimeles/ralphy). Install the CLI via npm
+(see the repo for the exact package name), then try single-task mode to run one-off commands before moving
+to more advanced flows. The demo also calls out the Greptile trial mentioned in the video description.
+
+## 📜 License
 Enterprise contracts also come with extended support and access to our research team.
 
 Learn more at [openhands.dev/enterprise](https://openhands.dev/enterprise)
 
+## Coolify Deployment (Raw Compose)
+1. In Coolify: New Project → Docker Compose → Raw Compose Deployment.
+2. Paste `docker-compose.coolify.yml` and add environment variables from `.env.example`.
+3. Set the domain + HTTPS, then deploy.
+
+**Verify LiteLLM usage**
+- Ensure the app logs show `LLM: base_url=http://litellm:4000/v1`.
+- Confirm `LLM_BASE_URL` points to the internal `litellm` service.
+
+## 🙏 Acknowledgements
 ### Everything Else
 
 Check out our [Product Roadmap](https://github.com/orgs/openhands/projects/1), and feel free to

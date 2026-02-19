@@ -34,12 +34,18 @@ from openhands.server.routes.health import add_health_endpoints
 from openhands.server.routes.manage_conversations import (
     app as manage_conversation_api_router,
 )
+from openhands.server.routes.models import app as models_router
+from openhands.server.routes.workflows import app as workflows_router
+from openhands.server.routes.connectors import app as connectors_router
+from openhands.server.routes.vault import app as vault_router
 from openhands.server.routes.mcp import mcp_server
 from openhands.server.routes.public import app as public_api_router
 from openhands.server.routes.secrets import app as secrets_router
 from openhands.server.routes.security import app as security_api_router
 from openhands.server.routes.settings import app as settings_router
+from openhands.server.routes.theater import app as theater_router
 from openhands.server.routes.trajectory import app as trajectory_router
+from openhands.server.routes.usage import app as usage_router
 from openhands.server.shared import conversation_manager, server_config
 from openhands.server.types import AppMode
 from openhands.version import get_version
@@ -96,6 +102,13 @@ app.include_router(conversation_api_router)
 app.include_router(manage_conversation_api_router)
 app.include_router(settings_router)
 app.include_router(secrets_router)
+app.include_router(usage_router)
+app.include_router(models_router)
+app.include_router(workflows_router)
+app.include_router(connectors_router)
+app.include_router(vault_router)
+app.include_router(theater_router)
+if server_config.app_mode == AppMode.OSS:
 if server_config.app_mode == AppMode.OPENHANDS:
     app.include_router(git_api_router)
 if server_config.enable_v1:

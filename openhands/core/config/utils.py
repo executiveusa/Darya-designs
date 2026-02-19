@@ -140,6 +140,24 @@ def load_from_env(
     default_agent_config = cfg.get_agent_config()
     set_attr_from_env(default_agent_config, 'AGENT_')
 
+    # Allow simplified env vars for common LLM settings
+    if 'DEFAULT_MODEL' in env_or_toml_dict and 'LLM_MODEL' not in env_or_toml_dict:
+        default_llm_config.model = env_or_toml_dict['DEFAULT_MODEL']
+    if 'MAX_TOKENS' in env_or_toml_dict and 'LLM_MAX_OUTPUT_TOKENS' not in env_or_toml_dict:
+        try:
+            default_llm_config.max_output_tokens = int(env_or_toml_dict['MAX_TOKENS'])
+        except ValueError:
+            logger.openhands_logger.error(
+                f'Invalid MAX_TOKENS value: {env_or_toml_dict["MAX_TOKENS"]}'
+            )
+    if 'TEMPERATURE' in env_or_toml_dict and 'LLM_TEMPERATURE' not in env_or_toml_dict:
+        try:
+            default_llm_config.temperature = float(env_or_toml_dict['TEMPERATURE'])
+        except ValueError:
+            logger.openhands_logger.error(
+                f'Invalid TEMPERATURE value: {env_or_toml_dict["TEMPERATURE"]}'
+            )
+
 
 def load_from_toml(cfg: OpenHandsConfig, toml_file: str = 'config.toml') -> None:
     """Load the config from the toml file. Supports both styles of config vars.

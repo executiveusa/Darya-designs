@@ -15,6 +15,8 @@ import { useConfig } from "#/hooks/query/use-config";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { I18nKey } from "#/i18n/declaration";
 import { MicroagentManagementButton } from "#/components/shared/buttons/microagent-management-button";
+import { WorkflowsButton } from "#/components/shared/buttons/workflows-button";
+import { ConnectorsButton } from "#/components/shared/buttons/connectors-button";
 import { cn } from "#/utils/utils";
 
 export function Sidebar() {
@@ -90,6 +92,8 @@ export function Sidebar() {
               }
               disabled={settings?.email_verified === false}
             />
+            <WorkflowsButton disabled={settings?.EMAIL_VERIFIED === false} />
+            <ConnectorsButton disabled={settings?.EMAIL_VERIFIED === false} />
             <MicroagentManagementButton
               disabled={settings?.email_verified === false}
             />

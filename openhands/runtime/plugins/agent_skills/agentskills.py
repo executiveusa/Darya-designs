@@ -8,6 +8,7 @@
 from inspect import signature
 
 from openhands.runtime.plugins.agent_skills import file_ops, file_reader
+from openhands.runtime.plugins.agent_skills import resolver_ops
 from openhands.runtime.plugins.agent_skills.utils.dependency import import_functions
 
 import_functions(
@@ -30,6 +31,12 @@ try:
 except ImportError:
     # If repo_ops is not available, we just skip importing it.
     pass
+
+import_functions(
+    module=resolver_ops, function_names=resolver_ops.__all__, target_globals=globals()
+)
+
+__all__ += resolver_ops.__all__
 
 
 DOCUMENTATION = ''

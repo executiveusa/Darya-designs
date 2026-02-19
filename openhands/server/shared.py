@@ -13,7 +13,9 @@ from dotenv import load_dotenv
 
 from openhands.core.config import load_openhands_config
 from openhands.core.config.openhands_config import OpenHandsConfig
+from openhands.core.logger import openhands_logger as logger
 from openhands.server.config.server_config import ServerConfig, load_server_config
+from openhands.server.services.model_presets import ModelPresetManager
 from openhands.server.conversation_manager.conversation_manager import (
     ConversationManager,
 )
@@ -29,6 +31,15 @@ from openhands.utils.import_utils import get_impl
 load_dotenv()
 
 config: OpenHandsConfig = load_openhands_config()
+preset_manager = ModelPresetManager()
+try:
+    llm_config = config.get_llm_config()
+    llm_config.model = preset_manager.get_active_model()
+except Exception:
+    llm_config = config.get_llm_config()
+logger.info(
+    'LLM: base_url=%s model=%s', llm_config.base_url, llm_config.model
+)
 server_config_interface: ServerConfigInterface = load_server_config()
 assert isinstance(server_config_interface, ServerConfig), (
     'Loaded server config interface is not a ServerConfig, despite this being assumed'

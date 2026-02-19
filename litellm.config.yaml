@@ -1,0 +1,24 @@
+model_list:
+  - model_name: glm-quality
+    litellm_params:
+      model: zhipuai-coding-plan/glm-4.7
+      api_key: ${ZAI_API_KEY}
+      api_base: ${ZHIPUAI_CODING_PLAN_BASE_URL}
+
+  - model_name: glm-main
+    litellm_params:
+      model: zhipuai-coding-plan/glm-4.6
+      api_key: ${ZAI_API_KEY}
+      api_base: ${ZHIPUAI_CODING_PLAN_BASE_URL}
+
+  - model_name: glm-fast
+    litellm_params:
+      model: zhipuai-coding-plan/glm-4.5-air
+      api_key: ${ZAI_API_KEY}
+      api_base: ${ZHIPUAI_CODING_PLAN_BASE_URL}
+
+  - model_name: glm-long
+    litellm_params:
+      model: zhipuai-coding-plan/glm-4.7
+      api_key: ${ZAI_API_KEY}
+      api_base: ${ZHIPUAI_CODING_PLAN_BASE_URL}

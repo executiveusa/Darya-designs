@@ -35,6 +35,11 @@ from openhands.storage.data_models.conversation_metadata import (
     ConversationMetadata,
     ConversationTrigger,
 )
+from openhands.storage.data_models.user_secrets import UserSecrets
+from openhands.utils.agent_profile import (
+    get_default_agent_profile,
+    merge_profile_with_instructions,
+)
 from openhands.storage.data_models.secrets import Secrets
 from openhands.utils.conversation_summary import get_default_conversation_title
 
@@ -115,6 +120,7 @@ async def start_conversation(
         if (
             not is_bedrock_model
             and not is_lemonade_model
+            and not settings.llm_base_url
             and (
                 not settings.llm_api_key
                 or settings.llm_api_key.get_secret_value().isspace()
@@ -136,7 +142,10 @@ async def start_conversation(
     session_init_args['custom_secrets'] = custom_secrets
     session_init_args['selected_branch'] = conversation_metadata.selected_branch
     session_init_args['git_provider'] = conversation_metadata.git_provider
-    session_init_args['conversation_instructions'] = conversation_instructions
+    profile_content = get_default_agent_profile()
+    session_init_args['conversation_instructions'] = merge_profile_with_instructions(
+        profile_content, conversation_instructions
+    )
     if mcp_config:
         session_init_args['mcp_config'] = mcp_config
 
