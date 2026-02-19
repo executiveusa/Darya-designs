@@ -1,5 +1,5 @@
-import { TooltipButton } from "./tooltip-button";
 import { Plug } from "lucide-react";
+import { TooltipButton } from "./tooltip-button";
 
 interface ConnectorsButtonProps {
   disabled?: boolean;

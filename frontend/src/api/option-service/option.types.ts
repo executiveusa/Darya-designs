@@ -21,6 +21,8 @@ export interface GetConfigResponse {
   MAINTENANCE?: {
     startTime: string;
   };
+}
+
 export interface WebClientFeatureFlags {
   enable_billing: boolean;
   hide_llm_settings: boolean;
