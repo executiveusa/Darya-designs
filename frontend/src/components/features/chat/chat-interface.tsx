@@ -6,6 +6,7 @@ import { convertImageToBase64 } from "#/utils/convert-image-to-base-64";
 import { TrajectoryActions } from "../trajectory/trajectory-actions";
 import { createChatMessage } from "#/services/chat-service";
 import { InteractiveChatBox } from "./interactive-chat-box";
+import { SlashCommandList } from "./slash-command-list";
 import { AgentState } from "#/types/agent-state";
 import { isOpenHandsAction, isActionOrObservation } from "#/types/core/guards";
 import { FeedbackModal } from "../feedback/feedback-modal";
@@ -271,6 +272,7 @@ export function ChatInterface() {
 
           {errorMessage && <ErrorMessageBanner message={errorMessage} />}
 
+          <SlashCommandList />
           <InteractiveChatBox onSubmit={handleSendMessage} />
         </div>
 

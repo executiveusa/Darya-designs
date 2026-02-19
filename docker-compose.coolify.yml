@@ -1,0 +1,76 @@
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    command: ["--config", "/app/litellm.config.yaml", "--port", "4000"]
+    env_file:
+      - .env
+    environment:
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - ZHIPUAI_CODING_PLAN_BASE_URL=${ZHIPUAI_CODING_PLAN_BASE_URL}
+    volumes:
+      - ./litellm.config.yaml:/app/litellm.config.yaml:ro
+    networks:
+      - dara_internal
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  dara:
+    build:
+      context: ./
+      dockerfile: ./containers/app/Dockerfile
+    image: dara-studio:latest
+    depends_on:
+      litellm:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - LLM_BASE_URL=http://litellm:4000/v1
+      - DEFAULT_MODEL_PRESET=${DEFAULT_MODEL_PRESET}
+      - MODEL_PRESET_QUALITY=${MODEL_PRESET_QUALITY}
+      - MODEL_PRESET_MAIN=${MODEL_PRESET_MAIN}
+      - MODEL_PRESET_FAST=${MODEL_PRESET_FAST}
+      - MODEL_PRESET_LONG=${MODEL_PRESET_LONG}
+      - PUBLIC_APP_NAME=${PUBLIC_APP_NAME}
+      - PUBLIC_DEFAULT_MODEL=${PUBLIC_DEFAULT_MODEL}
+      - DEFAULT_AGENT_PROFILE=${DEFAULT_AGENT_PROFILE}
+      - SANDBOX_RUNTIME_CONTAINER_IMAGE=${SANDBOX_RUNTIME_CONTAINER_IMAGE}
+      - LOG_ALL_EVENTS=false
+      - DATA_DIR=${DATA_DIR}
+      - ARTIFACTS_DIR=${ARTIFACTS_DIR}
+      - MASTER_KEY=${MASTER_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - NOTIFY_ON_COMPLETE=${NOTIFY_ON_COMPLETE}
+      - TTS_PROVIDER=${TTS_PROVIDER}
+      - TTS_API_KEY=${TTS_API_KEY}
+      - TTS_VOICE=${TTS_VOICE}
+      - MCP_RUBE_URL=${MCP_RUBE_URL}
+      - MCP_RUBE_API_KEY=${MCP_RUBE_API_KEY}
+      - COOLIFY_DEPLOYMENT=${COOLIFY_DEPLOYMENT}
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock
+      - dara_data:${DATA_DIR}
+    networks:
+      - dara_internal
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  dara_data:
+
+networks:
+  dara_internal:
+    driver: bridge

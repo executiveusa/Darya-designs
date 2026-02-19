@@ -1,11 +1,39 @@
 
 services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm-${DATE:-}
+    command: ["--config", "/app/litellm.config.yaml", "--port", "4000"]
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm.config.yaml:/app/litellm.config.yaml:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:4000/health').read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   openhands:
     build:
       context: ./
       dockerfile: ./containers/app/Dockerfile
     image: openhands:latest
     container_name: openhands-app-${DATE:-}
+    depends_on:
+      litellm:
+        condition: service_healthy
+    env_file:
+      - .env
     environment:
       - SANDBOX_RUNTIME_CONTAINER_IMAGE=${SANDBOX_RUNTIME_CONTAINER_IMAGE:-docker.all-hands.dev/openhands/runtime:0.59-nikolaik}
       #- SANDBOX_USER_ID=${SANDBOX_USER_ID:-1234} # enable this only if you want a specific non-root sandbox user but you will have to manually adjust permissions of ~/.openhands for this user

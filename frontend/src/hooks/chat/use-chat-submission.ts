@@ -1,8 +1,17 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   clearTextContent,
   clearFileInput,
 } from "#/components/features/chat/utils/chat-input.utils";
+import { I18nKey } from "#/i18n/declaration";
+import { displaySuccessToast } from "#/utils/custom-toast-handlers";
+import {
+  addSlashCommand,
+  parseSlashCommandCreation,
+  recordMessagePattern,
+  resolveSlashCommandInput,
+} from "#/utils/slash-commands";
 
 /**
  * Hook for handling chat message submission
@@ -14,6 +23,7 @@ export const useChatSubmission = (
   onSubmit: (message: string) => void,
   resetManualResize?: () => void,
 ) => {
+  const { t } = useTranslation();
   // Send button click handler
   const handleSubmit = useCallback(() => {
     const message = chatInputRef.current?.innerText || "";
@@ -23,7 +33,35 @@ export const useChatSubmission = (
       return;
     }
 
-    onSubmit(message);
+    const creation = parseSlashCommandCreation(trimmedMessage);
+    if (creation) {
+      const { command, wasUpdated } = addSlashCommand(
+        creation.name,
+        creation.prompt,
+      );
+      displaySuccessToast(
+        wasUpdated
+          ? t(I18nKey.SLASH_COMMANDS$UPDATED, { name: command.name })
+          : t(I18nKey.SLASH_COMMANDS$CREATED, { name: command.name }),
+      );
+      clearTextContent(chatInputRef.current);
+      clearFileInput(fileInputRef.current);
+      smartResize();
+      resetManualResize?.();
+      return;
+    }
+
+    const suggestion = recordMessagePattern(trimmedMessage);
+    if (suggestion) {
+      displaySuccessToast(
+        t(I18nKey.SLASH_COMMANDS$SUGGESTION, {
+          name: suggestion.suggestedName,
+        }),
+      );
+    }
+
+    const resolved = resolveSlashCommandInput(trimmedMessage);
+    onSubmit(resolved.resolvedMessage);
 
     // Clear the input
     clearTextContent(chatInputRef.current);
@@ -34,7 +72,7 @@ export const useChatSubmission = (
 
     // Reset manual resize state for next message
     resetManualResize?.();
-  }, [chatInputRef, fileInputRef, smartResize, onSubmit, resetManualResize]);
+  }, [chatInputRef, fileInputRef, smartResize, onSubmit, resetManualResize, t]);
 
   // Resume agent button click handler
   const handleResumeAgent = useCallback(() => {

@@ -128,8 +128,9 @@ class Settings(BaseModel):
     def from_config() -> Settings | None:
         app_config = load_openhands_config()
         llm_config: LLMConfig = app_config.get_llm_config()
-        if llm_config.api_key is None:
-            # If no api key has been set, we take this to mean that there is no reasonable default
+        if llm_config.api_key is None and not llm_config.base_url:
+            # If no api key has been set and no proxy base URL is configured,
+            # we take this to mean that there is no reasonable default.
             return None
         security = app_config.security
 

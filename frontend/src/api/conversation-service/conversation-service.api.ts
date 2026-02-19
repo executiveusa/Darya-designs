@@ -11,6 +11,7 @@ import {
   CreateMicroagent,
   FileUploadSuccessResponse,
   GetFilesResponse,
+  UsageCurrentResponse,
 } from "../open-hands.types";
 import { openHands } from "../open-hands-axios";
 import { Provider } from "#/types/settings";
@@ -207,6 +208,15 @@ class ConversationService {
 
     const { data } = await openHands.get<ResultSet<Conversation>>(
       `/api/conversations?${params.toString()}`,
+    );
+    return data;
+  }
+
+  static async getCurrentUsage(
+    sessionId: string,
+  ): Promise<UsageCurrentResponse> {
+    const { data } = await openHands.get<UsageCurrentResponse>(
+      `/api/usage/current?session_id=${sessionId}`,
     );
     return data;
   }

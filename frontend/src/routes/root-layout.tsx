@@ -28,6 +28,9 @@ import { useReoTracking } from "#/hooks/use-reo-tracking";
 import { LOCAL_STORAGE_KEYS } from "#/utils/local-storage";
 import { EmailVerificationGuard } from "#/components/features/guards/email-verification-guard";
 import { MaintenanceBanner } from "#/components/features/maintenance/maintenance-banner";
+import { UsageIndicator } from "#/components/features/usage/usage-indicator";
+import { ModelPresetSelector } from "#/components/features/model-presets/model-preset-selector";
+import { Hotpad } from "#/components/features/hotpad/hotpad";
 import { cn, isMobileDevice } from "#/utils/utils";
 
 export function ErrorBoundary() {
@@ -216,6 +219,11 @@ export default function MainApp() {
         {config.data?.MAINTENANCE && (
           <MaintenanceBanner startTime={config.data.MAINTENANCE.startTime} />
         )}
+        <UsageIndicator defaultModel={config.data?.PUBLIC_DEFAULT_MODEL} />
+        <div className="px-4 py-2 flex flex-wrap items-center gap-3 border-b border-base-700 bg-white/5 backdrop-blur">
+          <ModelPresetSelector />
+          <Hotpad />
+        </div>
         <div
           id="root-outlet"
           className="flex-1 relative overflow-auto custom-scrollbar"

@@ -103,11 +103,42 @@ docker run -it --rm --pull=always \
 > On a public network? See our [Hardened Docker Installation Guide](https://docs.all-hands.dev/usage/runtimes/docker#hardened-docker-installation)
 > to secure your deployment by restricting network binding and implementing additional security measures.
 
+### Option 3: LiteLLM + Zhipu (self-hosted)
+
+This repository includes a LiteLLM-only control plane configured for Zhipu models.
+
+**Prerequisites**
+- Docker + Docker Compose
+
+**Setup**
+```bash
+cp .env.example .env
+# Edit .env and set ZAI_API_KEY
+
+docker compose up --build
+```
+
+**Verify LiteLLM usage**
+- LiteLLM should be reachable at `http://localhost:4000/health`.
+- OpenHands should be reachable at `http://localhost:3000`.
+- LLM config is controlled by `.env` (`LLM_BASE_URL` + `DEFAULT_MODEL`).
+
+**Verify token usage**
+```bash
+curl "http://localhost:3000/api/usage/current?session_id=<conversation_id>"
+```
+
+**Switch models**
+Update `DEFAULT_MODEL` (and `PUBLIC_DEFAULT_MODEL`) in `.env`, then restart:
+```bash
+docker compose up --build
+```
+
 ### Getting Started
 
 When you open the application, you'll be asked to choose an LLM provider and add an API key.
-[Anthropic's Claude Sonnet 4.5](https://www.anthropic.com/api) (`anthropic/claude-sonnet-4-5-20250929`)
-works best, but you have [many options](https://docs.all-hands.dev/usage/llms).
+For the LiteLLM + Zhipu setup above, the default preset targets `glm-4.7` and its related coding
+family, but you still have [many options](https://docs.all-hands.dev/usage/llms).
 
 See the [Running OpenHands](https://docs.all-hands.dev/usage/installation) guide for
 system requirements and more information.
@@ -160,9 +191,25 @@ See the monthly OpenHands roadmap [here](https://github.com/orgs/OpenHands/proje
   </a>
 </p>
 
+## 🧰 Ralphie CLI demo (external)
+
+If you want to follow the Ralphie CLI walkthrough referenced in the video transcript, start with the
+repository at [michaelshimeles/ralphy](https://github.com/michaelshimeles/ralphy). Install the CLI via npm
+(see the repo for the exact package name), then try single-task mode to run one-off commands before moving
+to more advanced flows. The demo also calls out the Greptile trial mentioned in the video description.
+
 ## 📜 License
 
 Distributed under the MIT License, with the exception of the `enterprise/` folder. See [`LICENSE`](./LICENSE) for more information.
+
+## Coolify Deployment (Raw Compose)
+1. In Coolify: New Project → Docker Compose → Raw Compose Deployment.
+2. Paste `docker-compose.coolify.yml` and add environment variables from `.env.example`.
+3. Set the domain + HTTPS, then deploy.
+
+**Verify LiteLLM usage**
+- Ensure the app logs show `LLM: base_url=http://litellm:4000/v1`.
+- Confirm `LLM_BASE_URL` points to the internal `litellm` service.
 
 ## 🙏 Acknowledgements
 

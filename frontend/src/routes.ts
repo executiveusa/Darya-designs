@@ -21,5 +21,7 @@ export default [
     ]),
     route("conversations/:conversationId", "routes/conversation.tsx"),
     route("microagent-management", "routes/microagent-management.tsx"),
+    route("workflows", "routes/workflows.tsx"),
+    route("connectors", "routes/connectors.tsx"),
   ]),
 ] satisfies RouteConfig;

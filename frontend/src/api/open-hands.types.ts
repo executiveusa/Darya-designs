@@ -117,6 +117,98 @@ export interface GetMicroagentPromptResponse {
   prompt: string;
 }
 
+export interface UsageCurrentResponse {
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  accumulated_cost: number;
+  updated_at: string;
+}
+
+export interface ModelPreset {
+  name: string;
+  model: string;
+}
+
+export interface ModelPresetState {
+  active: string;
+  updated_at: string;
+}
+
+export interface ModelPresetResponse {
+  presets: ModelPreset[];
+  state: ModelPresetState;
+}
+
+export interface ModelPresetActivateRequest {
+  preset: string;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  schema: {
+    name: string;
+    steps: Record<string, unknown>[];
+  };
+  created_at: string;
+}
+
+export interface WorkflowRunResponse {
+  run_id: string;
+}
+
+export interface WorkflowApproval {
+  id: string;
+  action_type: string;
+  payload_hash: string;
+  status: string;
+  decided_by?: string | null;
+  decided_at?: string | null;
+}
+
+export interface WorkflowRunStatus {
+  id: string;
+  workflow_id: string;
+  status: string;
+  current_step: number;
+  created_at: string;
+  updated_at: string;
+  approvals: WorkflowApproval[];
+}
+
+export interface WorkflowArtifact {
+  id: string;
+  path: string;
+  type: string;
+  created_at: string;
+}
+
+export interface WorkflowRunRequest {
+  workflow_id: string;
+  input: Record<string, unknown>;
+}
+
+export interface WorkflowApprovalRequest {
+  approval_id: string;
+  decision: string;
+  decided_by?: string;
+}
+
+export interface ConnectorInfo {
+  id: string;
+  name: string;
+  status: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ConnectorConnectRequest {
+  name: string;
+  payload: Record<string, unknown>;
+}
+
 export interface IOption<T> {
   label: string;
   value: T;

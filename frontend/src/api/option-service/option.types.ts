@@ -5,6 +5,8 @@ export interface GetConfigResponse {
   APP_SLUG?: string;
   GITHUB_CLIENT_ID: string;
   POSTHOG_CLIENT_KEY: string;
+  PUBLIC_APP_NAME?: string;
+  PUBLIC_DEFAULT_MODEL?: string;
   PROVIDERS_CONFIGURED?: Provider[];
   AUTH_URL?: string;
   FEATURE_FLAGS: {
@@ -13,6 +15,8 @@ export interface GetConfigResponse {
     ENABLE_JIRA: boolean;
     ENABLE_JIRA_DC: boolean;
     ENABLE_LINEAR: boolean;
+    VOICE_ENABLED?: boolean;
+    COST_VISIBILITY?: boolean;
   };
   MAINTENANCE?: {
     startTime: string;
