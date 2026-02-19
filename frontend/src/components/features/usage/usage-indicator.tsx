@@ -16,12 +16,6 @@ export function UsageIndicator({ defaultModel }: UsageIndicatorProps) {
   const config = useConfig();
   const { t } = useTranslation();
 
-  React.useEffect(() => {
-    if (conversationId) {
-      sessionStorage.setItem("session_id", conversationId);
-    }
-  }, [conversationId]);
-
   if (!conversationId || config.data?.FEATURE_FLAGS.COST_VISIBILITY === false) {
     return null;
   }

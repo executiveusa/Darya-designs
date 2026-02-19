@@ -7,6 +7,8 @@ services:
     env_file:
       - .env
     ports:
+      # Port exposed for health checks and debugging.
+      # In production, consider removing this port mapping if not needed externally
       - "4000:4000"
     volumes:
       - ./litellm.config.yaml:/app/litellm.config.yaml:ro
