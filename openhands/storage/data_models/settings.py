@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -14,7 +16,7 @@ from pydantic import (
 from openhands.core.config.llm_config import LLMConfig
 from openhands.core.config.mcp_config import MCPConfig
 from openhands.core.config.utils import load_openhands_config
-from openhands.storage.data_models.user_secrets import UserSecrets
+from openhands.storage.data_models.secrets import Secrets
 
 
 class Settings(BaseModel):
@@ -28,9 +30,12 @@ class Settings(BaseModel):
     llm_model: str | None = None
     llm_api_key: SecretStr | None = None
     llm_base_url: str | None = None
+    user_version: int | None = None
     remote_runtime_resource_factor: int | None = None
     # Planned to be removed from settings
-    secrets_store: UserSecrets = Field(default_factory=UserSecrets, frozen=True)
+    secrets_store: Annotated[Secrets, Field(frozen=True)] = Field(
+        default_factory=Secrets
+    )
     enable_default_condenser: bool = True
     enable_sound_notifications: bool = False
     enable_proactive_conversation_starters: bool = True
@@ -48,6 +53,7 @@ class Settings(BaseModel):
     email_verified: bool | None = None
     git_user_name: str | None = None
     git_user_email: str | None = None
+    v1_enabled: bool = True
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -76,7 +82,7 @@ class Settings(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def convert_provider_tokens(cls, data: dict | object) -> dict | object:
-        """Convert provider tokens from JSON format to UserSecrets format."""
+        """Convert provider tokens from JSON format to Secrets format."""
         if not isinstance(data, dict):
             return data
 
@@ -87,10 +93,10 @@ class Settings(BaseModel):
         custom_secrets = secrets_store.get('custom_secrets')
         tokens = secrets_store.get('provider_tokens')
 
-        secret_store = UserSecrets(provider_tokens={}, custom_secrets={})  # type: ignore[arg-type]
+        secret_store = Secrets(provider_tokens={}, custom_secrets={})  # type: ignore[arg-type]
 
         if isinstance(tokens, dict):
-            converted_store = UserSecrets(provider_tokens=tokens)  # type: ignore[arg-type]
+            converted_store = Secrets(provider_tokens=tokens)  # type: ignore[arg-type]
             secret_store = secret_store.model_copy(
                 update={'provider_tokens': converted_store.provider_tokens}
             )
@@ -98,7 +104,7 @@ class Settings(BaseModel):
             secret_store.model_copy(update={'provider_tokens': tokens})
 
         if isinstance(custom_secrets, dict):
-            converted_store = UserSecrets(custom_secrets=custom_secrets)  # type: ignore[arg-type]
+            converted_store = Secrets(custom_secrets=custom_secrets)  # type: ignore[arg-type]
             secret_store = secret_store.model_copy(
                 update={'custom_secrets': converted_store.custom_secrets}
             )
@@ -119,7 +125,7 @@ class Settings(BaseModel):
         return v
 
     @field_serializer('secrets_store')
-    def secrets_store_serializer(self, secrets: UserSecrets, info: SerializationInfo):
+    def secrets_store_serializer(self, secrets: Secrets, info: SerializationInfo):
         """Custom serializer for secrets store."""
         """Force invalidate secret store"""
         return {'provider_tokens': {}}

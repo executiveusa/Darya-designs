@@ -3,9 +3,8 @@ import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import { useConversationId } from "#/hooks/use-conversation-id";
-import { useCommandStore } from "#/state/command-store";
-import { useJupyterStore } from "#/state/jupyter-store";
-import { useConversationStore } from "#/state/conversation-store";
+import { useCommandStore } from "#/stores/command-store";
+import { useConversationStore } from "#/stores/conversation-store";
 import { useAgentStore } from "#/stores/agent-store";
 import { AgentState } from "#/types/agent-state";
 
@@ -17,13 +16,12 @@ import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useTaskPolling } from "#/hooks/query/use-task-polling";
 
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
-import { useDocumentTitleFromState } from "#/hooks/use-document-title-from-state";
 import { useIsAuthed } from "#/hooks/query/use-is-authed";
 import { ConversationSubscriptionsProvider } from "#/context/conversation-subscriptions-provider";
 import { useUserProviders } from "#/hooks/use-user-providers";
 
 import { ConversationMain } from "#/components/features/conversation/conversation-main/conversation-main";
-import { ConversationName } from "#/components/features/conversation/conversation-name";
+import { ConversationNameWithStatus } from "#/components/features/conversation/conversation-name-with-status";
 
 import { ConversationTabs } from "#/components/features/conversation/conversation-tabs/conversation-tabs";
 import { WebSocketProviderWrapper } from "#/contexts/websocket-provider-wrapper";
@@ -34,7 +32,6 @@ import { useEventStore } from "#/stores/use-event-store";
 
 function AppContent() {
   useConversationConfig();
-
   const { t } = useTranslation();
   const { conversationId } = useConversationId();
   const clearEvents = useEventStore((state) => state.clearEvents);
@@ -53,7 +50,6 @@ function AppContent() {
   const setCurrentAgentState = useAgentStore(
     (state) => state.setCurrentAgentState,
   );
-  const clearJupyter = useJupyterStore((state) => state.clearJupyter);
   const removeErrorMessage = useErrorMessageStore(
     (state) => state.removeErrorMessage,
   );
@@ -64,13 +60,9 @@ function AppContent() {
   // Fetch batch feedback data when conversation is loaded
   useBatchFeedback();
 
-  // Set the document title to the conversation title when available
-  useDocumentTitleFromState();
-
   // 1. Cleanup Effect - runs when navigating to a different conversation
   React.useEffect(() => {
     clearTerminal();
-    clearJupyter();
     resetConversationState();
     setCurrentAgentState(AgentState.LOADING);
     removeErrorMessage();
@@ -84,7 +76,6 @@ function AppContent() {
   }, [
     conversationId,
     clearTerminal,
-    clearJupyter,
     resetConversationState,
     setCurrentAgentState,
     removeErrorMessage,
@@ -164,7 +155,7 @@ function AppContent() {
           className="p-3 md:p-0 flex flex-col h-full gap-3"
         >
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4.5 pt-2 lg:pt-0">
-            <ConversationName />
+            <ConversationNameWithStatus />
             <ConversationTabs />
           </div>
 

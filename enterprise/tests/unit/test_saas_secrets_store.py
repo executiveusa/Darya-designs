@@ -1,15 +1,16 @@
 from types import MappingProxyType
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import UUID
 
 import pytest
 from pydantic import SecretStr
 from storage.saas_secrets_store import SaasSecretsStore
-from storage.stored_user_secrets import StoredUserSecrets
+from storage.stored_custom_secrets import StoredCustomSecrets
 
 from openhands.core.config.openhands_config import OpenHandsConfig
 from openhands.integrations.provider import CustomSecret
-from openhands.storage.data_models.user_secrets import UserSecrets
+from openhands.storage.data_models.secrets import Secrets
 
 
 @pytest.fixture
@@ -20,15 +21,30 @@ def mock_config():
 
 
 @pytest.fixture
+def mock_user():
+    """Mock user with org_id."""
+    user = MagicMock()
+    user.current_org_id = UUID('a1111111-1111-1111-1111-111111111111')
+    return user
+
+
+@pytest.fixture
 def secrets_store(session_maker, mock_config):
     return SaasSecretsStore('user-id', session_maker, mock_config)
 
 
 class TestSaasSecretsStore:
     @pytest.mark.asyncio
-    async def test_store_and_load(self, secrets_store):
-        # Create a UserSecrets object with some test data
-        user_secrets = UserSecrets(
+    @patch(
+        'storage.saas_secrets_store.UserStore.get_user_by_id_async',
+        new_callable=AsyncMock,
+    )
+    async def test_store_and_load(self, mock_get_user, secrets_store, mock_user):
+        # Setup mock
+        mock_get_user.return_value = mock_user
+
+        # Create a Secrets object with some test data
+        user_secrets = Secrets(
             custom_secrets=MappingProxyType(
                 {
                     'api_token': CustomSecret.from_value(
@@ -59,9 +75,15 @@ class TestSaasSecretsStore:
         )
 
     @pytest.mark.asyncio
-    async def test_encryption_decryption(self, secrets_store):
-        # Create a UserSecrets object with sensitive data
-        user_secrets = UserSecrets(
+    @patch(
+        'storage.saas_secrets_store.UserStore.get_user_by_id_async',
+        new_callable=AsyncMock,
+    )
+    async def test_encryption_decryption(self, mock_get_user, secrets_store, mock_user):
+        # Setup mock
+        mock_get_user.return_value = mock_user
+        # Create a Secrets object with sensitive data
+        user_secrets = Secrets(
             custom_secrets=MappingProxyType(
                 {
                     'api_token': CustomSecret.from_value(
@@ -87,8 +109,9 @@ class TestSaasSecretsStore:
         # Verify the data is encrypted in the database
         with secrets_store.session_maker() as session:
             stored = (
-                session.query(StoredUserSecrets)
-                .filter(StoredUserSecrets.keycloak_user_id == 'user-id')
+                session.query(StoredCustomSecrets)
+                .filter(StoredCustomSecrets.keycloak_user_id == 'user-id')
+                .filter(StoredCustomSecrets.org_id == mock_user.current_org_id)
                 .first()
             )
 
@@ -152,9 +175,17 @@ class TestSaasSecretsStore:
         assert await secrets_store.load() is None
 
     @pytest.mark.asyncio
-    async def test_update_existing_secrets(self, secrets_store):
+    @patch(
+        'storage.saas_secrets_store.UserStore.get_user_by_id_async',
+        new_callable=AsyncMock,
+    )
+    async def test_update_existing_secrets(
+        self, mock_get_user, secrets_store, mock_user
+    ):
+        # Setup mock
+        mock_get_user.return_value = mock_user
         # Create and store initial secrets
-        initial_secrets = UserSecrets(
+        initial_secrets = Secrets(
             custom_secrets=MappingProxyType(
                 {
                     'api_token': CustomSecret.from_value(
@@ -169,7 +200,7 @@ class TestSaasSecretsStore:
         await secrets_store.store(initial_secrets)
 
         # Create and store updated secrets
-        updated_secrets = UserSecrets(
+        updated_secrets = Secrets(
             custom_secrets=MappingProxyType(
                 {
                     'api_token': CustomSecret.from_value(
