@@ -35,10 +35,18 @@ preset_manager = ModelPresetManager()
 try:
     llm_config = config.get_llm_config()
     llm_config.model = preset_manager.get_active_model()
-except Exception:
+except Exception as exc:
+    # Log the exception for debugging purposes
+    logger.warning(
+        'Failed to get active model from preset manager: %s. Using default LLM config.',
+        exc,
+        exc_info=True
+    )
     llm_config = config.get_llm_config()
+# Use structured logging with separate fields instead of f-string interpolation
 logger.info(
-    'LLM: base_url=%s model=%s', llm_config.base_url, llm_config.model
+    'LLM configuration loaded',
+    extra={'base_url': llm_config.base_url, 'model': llm_config.model}
 )
 server_config_interface: ServerConfigInterface = load_server_config()
 assert isinstance(server_config_interface, ServerConfig), (

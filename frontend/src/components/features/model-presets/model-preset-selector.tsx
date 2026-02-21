@@ -45,15 +45,18 @@ export function ModelPresetSelector() {
     displaySuccessToast(`Switched to ${preset} mode`);
   };
 
-  const handleRunWorkflow = (name: string) => {
-    const match = workflows?.find((workflow) =>
-      workflow.name.toLowerCase().includes(name.toLowerCase()),
-    );
-    if (match) {
-      runWorkflow.mutate({ workflow_id: match.id, input: {} });
-      displaySuccessToast(`Running ${match.name}`);
-    }
-  };
+  const handleRunWorkflow = React.useCallback(
+    (name: string) => {
+      const match = workflows?.find((workflow) =>
+        workflow.name.toLowerCase().includes(name.toLowerCase()),
+      );
+      if (match) {
+        runWorkflow.mutate({ workflow_id: match.id, input: {} });
+        displaySuccessToast(`Running ${match.name}`);
+      }
+    },
+    [workflows, runWorkflow],
+  );
 
   const handleVoice = React.useCallback(() => {
     const SpeechRecognition =
@@ -73,7 +76,17 @@ export function ModelPresetSelector() {
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.onresult = (event: SpeechRecognitionResultEventLike) => {
-      const transcript = event.results[0][0].transcript.toLowerCase();
+      // Add bounds checking for speech recognition results
+      const firstResult =
+        event.results && event.results.length > 0
+          ? event.results[0]
+          : undefined;
+      if (!firstResult || firstResult.length === 0) return;
+      const firstAlternative = firstResult[0];
+      if (!firstAlternative || typeof firstAlternative.transcript !== "string")
+        return;
+
+      const transcript = firstAlternative.transcript.toLowerCase();
       if (transcript.includes("fast")) handlePreset("fast");
       if (transcript.includes("quality")) handlePreset("quality");
       if (transcript.includes("long")) handlePreset("long");

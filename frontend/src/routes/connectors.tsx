@@ -1,5 +1,9 @@
 import React from "react";
-import { useConnectors, useConnectorStatus, useConnectConnector } from "#/hooks/query/use-connectors";
+import {
+  useConnectors,
+  useConnectorStatus,
+  useConnectConnector,
+} from "#/hooks/query/use-connectors";
 import { cn } from "#/utils/utils";
 
 export default function ConnectorsRoute() {

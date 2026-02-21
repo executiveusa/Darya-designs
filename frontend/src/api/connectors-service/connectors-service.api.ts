@@ -1,8 +1,5 @@
 import { openHands } from "#/api/open-hands-axios";
-import {
-  ConnectorConnectRequest,
-  ConnectorInfo,
-} from "#/api/open-hands.types";
+import { ConnectorConnectRequest, ConnectorInfo } from "#/api/open-hands.types";
 
 class ConnectorsService {
   static async listConnectors(): Promise<ConnectorInfo[]> {

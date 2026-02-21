@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
+from urllib.parse import urlparse
 
 import requests
 import logging
@@ -28,6 +29,35 @@ class ConnectorService:
         self._store = get_store()
         self._base_url = os.getenv("MCP_RUBE_URL", "").rstrip("/")
         self._api_key = os.getenv("MCP_RUBE_API_KEY", "")
+        self._validate_base_url()
+
+    def _validate_base_url(self) -> None:
+        """Validate the MCP_RUBE_URL to prevent SSRF attacks."""
+        if not self._base_url:
+            return
+        
+        try:
+            parsed = urlparse(self._base_url)
+            # Only allow http/https schemes
+            if parsed.scheme not in ("http", "https"):
+                raise ValueError(f"Invalid URL scheme: {parsed.scheme}")
+            
+            # Prevent localhost and internal network access
+            hostname = parsed.hostname
+            if hostname:
+                hostname_lower = hostname.lower()
+                # Block localhost variants
+                if hostname_lower in ("localhost", "127.0.0.1", "::1"):
+                    raise ValueError("Localhost URLs are not allowed")
+                # Block private IP ranges (basic check)
+                if hostname_lower.startswith(("10.", "172.16.", "192.168.")):
+                    raise ValueError("Private IP addresses are not allowed")
+                # Block link-local addresses
+                if hostname_lower.startswith("169.254."):
+                    raise ValueError("Link-local addresses are not allowed")
+        except Exception as e:
+            logger.error(f"Invalid MCP_RUBE_URL: {self._base_url}, error: {e}")
+            self._base_url = ""  # Disable connector service if URL is invalid
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}

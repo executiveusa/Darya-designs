@@ -29,9 +29,7 @@ export function Hotpad() {
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="uppercase tracking-[0.2em] text-white/50">
-          Hotpad
-        </span>
+        <span className="uppercase tracking-[0.2em] text-white/50">Hotpad</span>
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}

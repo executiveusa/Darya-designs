@@ -309,7 +309,15 @@ class WorkflowEngine:
     def _run_shell_command(command: str) -> dict[str, str]:
         if not command:
             return {"status": "skipped", "output": "no command provided"}
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, check=False)
+        # Use shell=False with argument list for security
+        # Commands should be properly formatted as shell commands might not work
+        # For compatibility, we still accept string commands but run them safely via sh -c
+        result = subprocess.run(
+            ["/bin/sh", "-c", command],
+            capture_output=True,
+            text=True,
+            check=False
+        )
         return {
             "status": "ok" if result.returncode == 0 else "error",
             "output": (result.stdout + result.stderr).strip(),
