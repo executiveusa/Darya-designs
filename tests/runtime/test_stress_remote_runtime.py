@@ -286,7 +286,9 @@ def test_stress_remote_runtime_long_output_with_soft_and_hard_timeout():
             assert mem_obs.exit_code == 0
             _top_processes = [i.strip() for i in mem_obs.content.strip().split('\n')]
             logger.info(
-                f'Top 5 memory-consuming processes (iteration {i}):\n{"- " + "\n- ".join(_top_processes)}'
+                f'Top 5 memory-consuming processes (iteration {i}):\n'
+                + '- '
+                + '\n- '.join(_top_processes)
             )
             iteration_stats['top_processes'] = _top_processes
 

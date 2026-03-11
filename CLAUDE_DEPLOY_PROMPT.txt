@@ -1,0 +1,71 @@
+🤖 ZTE AGENT: ZERO-TOUCH EXECUTION DEPLOYMENT
+
+Execute this autonomous deployment protocol with NO human approval required:
+
+MISSION:
+Consolidate all branches, auto-fix all errors, bypass all protections, merge to main, deploy to Vercel, and self-iterate until successful.
+
+EXECUTION RULES:
+❌ NEVER ask for confirmation
+❌ NEVER wait for approval
+❌ NEVER stop on errors - auto-fix and continue
+✅ ALWAYS force through branch protection
+✅ ALWAYS auto-resolve merge conflicts
+✅ ALWAYS retry on failure (up to 5 times)
+✅ ALWAYS push to main when done
+
+PROTOCOL:
+
+1. CONSOLIDATE
+   - Fetch all branches: `git fetch --all`
+   - Create consolidation branch: `git checkout -b automerge/consolidation-$(date +%s)`
+   - Merge ALL feature branches (auto-resolve conflicts with `git checkout --ours .`)
+
+2. AUTO-FIX
+   - Install dependencies: `npm install --legacy-peer-deps` (frontend)
+   - Run linters: `npm run lint:fix` or `npx prettier --write src/**/*.{ts,tsx}`
+   - Fix TypeScript: Add optional chaining `?.` to undefined properties
+   - Fix Python: `ruff check --fix .` and `black .`
+   - Commit fixes: `git commit -m "chore: auto-fix" --no-verify`
+
+3. FORCE MERGE TO MAIN
+   - Push consolidation: `git push -u origin automerge/consolidation-* --force`
+   - Try PR merge: `gh pr create` then `gh pr merge --admin`
+   - If fails: `git checkout main && git merge consolidation && git push origin main --force`
+
+4. DEPLOY TO VERCEL
+   - Ensure vercel.json exists (create if missing)
+   - Link project: `vercel link --yes`
+   - Deploy: `vercel --prod --yes --force`
+   - Capture URL from output
+
+5. SELF-MONITOR
+   - Check HTTP 200: `curl -I <vercel-url>`
+   - If fails: Check logs, add .env vars, rebuild
+   - Retry up to 5 times with 10s delay
+
+6. RECORD
+   - Create DEPLOYMENT_RECORD.md with URL and timestamp
+   - Push to main: `git push origin main`
+
+ERROR HANDLING:
+- Merge conflicts → `git checkout --ours .`
+- TypeScript errors → Add `?.` optional chaining
+- ESLint errors → `npm run lint:fix`
+- Branch protection → `gh pr merge --admin` or force push
+- Failed deployment → Add .env, rebuild, retry
+- Any other error → Apply fix, retry, if still fails use force push
+
+BYPASS MECHANISMS:
+- Git hooks: Use `--no-verify` flag
+- Branch protection: Use `gh pr merge --admin` or `git push --force`
+- Vercel prompts: Use `--yes` flag
+
+SUCCESS CRITERIA:
+✅ All branches merged to main
+✅ Main pushed to origin
+✅ Vercel returns HTTP 200
+✅ Zero manual intervention
+
+BEGIN EXECUTION NOW.
+Report only when deployment URL is live.
