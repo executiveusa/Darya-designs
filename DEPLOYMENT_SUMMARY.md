@@ -29,15 +29,11 @@ This implementation provides the foundation for **OpenHands Studio**, a visual, 
 
 ### 📋 Commits Made
 
-```
-c427286 feat: Add OpenHands Studio documentation and deployment configs
-92f727c feat: Add Vercel deployment configuration
-f41dbfe feat: Add OpenHands Studio infrastructure with feature flag
-```
+See the pull request for the full list of commits.
 
 ### 🌿 Branch Status
 
-**Branch**: `claude/openhands-studio-ux-gcRoA`
+**Branch**: `<branch-name>`
 **Status**: All changes committed and pushed to remote
 **Ready for**: Pull Request and code review
 
@@ -47,11 +43,8 @@ f41dbfe feat: Add OpenHands Studio infrastructure with feature flag
 
 ```bash
 # Clone the repository
-git clone https://github.com/executiveusa/Darya-designs.git
-cd Darya-designs
-
-# Checkout the Studio branch
-git checkout claude/openhands-studio-ux-gcRoA
+git clone <your-repository-url>
+cd <repository-name>
 
 # Configure environment
 cp .env.studio.example .env
@@ -70,7 +63,7 @@ docker-compose -f docker-compose.studio.yml up -d
 npm i -g vercel
 
 # Deploy
-cd Darya-designs
+cd <repository-name>
 vercel deploy
 ```
 
@@ -96,12 +89,6 @@ fly deploy
 ```
 
 ## 🔗 Links
-
-### Pull Request
-Create PR at: https://github.com/executiveusa/Darya-designs/compare/claude/openhands-studio-ux-gcRoA
-
-### Repository
-Branch: https://github.com/executiveusa/Darya-designs/tree/claude/openhands-studio-ux-gcRoA
 
 ## 📊 What's Next
 
@@ -148,21 +135,21 @@ This PR establishes the foundation. Future work includes:
 
 ## ⚠️ Important Notes
 
-1. **No Breaking Changes**: All Studio features are behind the `STUDIO_ENABLED` flag
+1. **No Breaking Changes**: All Studio features are behind the `ENABLE_STUDIO` flag
 2. **Backward Compatible**: Existing OpenHands functionality is unchanged
 3. **Production Ready**: Docker Compose configuration includes health checks and volume persistence
 4. **LLM API Key Required**: Must set `LLM_API_KEY` environment variable for agent execution
 
 ## 🤝 Next Steps
 
-1. **Review the PR** at the link above
+1. **Review these changes** using your standard code review process
 2. **Test the deployment** using Docker Compose
-3. **Merge to main** after approval
+3. **Merge to your main branch** after approval
 4. **Deploy to production** using your preferred platform
 5. **Continue development** with Phase 2 UI components
 
 ---
 
 **Status**: ✅ Foundation complete, ready for review and deployment
-**Branch**: `claude/openhands-studio-ux-gcRoA`
-**Date**: 2026-01-21
+**Branch**: `<branch-name>`
+**Date**: `<deployment-date>`

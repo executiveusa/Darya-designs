@@ -19,11 +19,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://@backend_host/api/:path*"
+      "destination": "https://backend.example.com/api/:path*"
     },
     {
       "source": "/socket.io/:path*",
-      "destination": "https://@backend_host/socket.io/:path*"
+      "destination": "https://backend.example.com/socket.io/:path*"
     },
     {
       "source": "/(.*)",
@@ -45,7 +45,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "value": "https://openhands-studio.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Methods",

@@ -1,10 +1,14 @@
 # OpenHands Studio
 
-OpenHands Studio is a visual, voice-enabled, non-CLI interface for running, observing, controlling, and approving autonomous agents operating on real repositories.
+> **⚠️ Status: Under Active Development — Not Yet Available**
+>
+> The features described in this document are planned for OpenHands Studio. They are not currently implemented in this version of the repository. This document serves as a design reference for future development.
+
+OpenHands Studio is a planned visual, voice-enabled, non-CLI interface for running, observing, controlling, and approving autonomous agents operating on real repositories.
 
 ## Overview
 
-OpenHands Studio transforms the OpenHands agent platform into a calm, high-trust, transparent environment designed for three distinct user personas:
+OpenHands Studio will transform the OpenHands agent platform into a calm, high-trust, transparent environment designed for three distinct user personas:
 
 - **Non-technical users** (Studio Mode) - Default experience focused on outcomes
 - **Power users** (Builder Mode) - Advanced configuration and customization
@@ -14,13 +18,13 @@ OpenHands Studio transforms the OpenHands agent platform into a calm, high-trust
 
 ### Feature Flag
 
-Studio functionality is controlled by the `STUDIO_ENABLED` environment variable (default: `true`).
+Studio functionality is controlled by the `ENABLE_STUDIO` environment variable (default: `false`).
 
 ```bash
-export STUDIO_ENABLED=true
+export ENABLE_STUDIO=true
 ```
 
-### Core Components
+### Core Components (Planned)
 
 #### Frontend Architecture
 - **Framework**: React 19 with React Router v7
@@ -186,7 +190,7 @@ Computer-use agents appear as:
 docker-compose -f docker-compose.studio.yml up
 
 # Using CLI (requires uv)
-export STUDIO_ENABLED=true
+export ENABLE_STUDIO=true
 uvx --python 3.12 --from openhands-ai openhands serve
 ```
 
@@ -200,7 +204,7 @@ docker build -f containers/app/Dockerfile -t openhands-studio:latest .
 
 # Run
 docker run -it --rm \
-  -e STUDIO_ENABLED=true \
+  -e ENABLE_STUDIO=true \
   -e LLM_API_KEY=your_key \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
@@ -230,7 +234,7 @@ See deployment-specific guides in `/deployment` directory.
 
 ```bash
 # Studio Feature Flag
-STUDIO_ENABLED=true  # Enable Studio features
+ENABLE_STUDIO=true  # Enable Studio features
 
 # LLM Configuration
 LLM_MODEL=anthropic/claude-3-5-sonnet-20241022
@@ -432,7 +436,7 @@ pytest tests/integration/studio/
 
 ```bash
 # Check feature flag
-echo $STUDIO_ENABLED
+echo $ENABLE_STUDIO
 
 # Check logs
 docker logs openhands-studio

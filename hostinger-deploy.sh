@@ -20,7 +20,7 @@ echo "📤 Uploading to Hostinger..."
 scp openhands-studio.tar.gz ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/
 
 echo "🔧 Deploying on server..."
-ssh ${DEPLOY_USER}@${DEPLOY_HOST} << 'ENDSSH'
+ssh ${DEPLOY_USER}@${DEPLOY_HOST} << ENDSSH
 cd $DEPLOY_PATH
 
 # Load Docker image
@@ -40,9 +40,9 @@ docker run -d \
   --restart unless-stopped \
   -p 3000:3000 \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v $(pwd)/workspace:/opt/workspace_base \
-  -v $(pwd)/data:/.openhands \
-  -e STUDIO_ENABLED=true \
+  -v \$(pwd)/workspace:/opt/workspace_base \
+  -v \$(pwd)/data:/.openhands \
+  -e ENABLE_STUDIO=true \
   -e LLM_API_KEY=${LLM_API_KEY} \
   -e LLM_MODEL=${LLM_MODEL:-anthropic/claude-3-5-sonnet-20241022} \
   -e SANDBOX_RUNTIME_CONTAINER_IMAGE=docker.all-hands.dev/openhands/runtime:0.59-nikolaik \

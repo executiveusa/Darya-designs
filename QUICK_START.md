@@ -19,13 +19,12 @@
 ### Backend to Hostinger (3 minutes)
 
 ```bash
-# 1. SSH into your Hostinger VPS
-ssh root@your-hostinger-ip
+# 1. SSH into your server
+ssh root@your-server-ip
 
 # 2. Clone and deploy
-git clone https://github.com/executiveusa/Darya-designs.git /opt/openhands
+git clone <your-repository-url> /opt/openhands
 cd /opt/openhands
-git checkout claude/openhands-studio-ux-gcRoA
 
 # 3. Configure
 cp .env.studio.example .env
