@@ -1,71 +1,68 @@
-🤖 ZTE AGENT: ZERO-TOUCH EXECUTION DEPLOYMENT
+CLAUDE_DEPLOY_PROMPT (SANITIZED)
 
-Execute this autonomous deployment protocol with NO human approval required:
+This file previously contained instructions for an autonomous, zero-touch deployment
+flow that bypassed branch protections, used force-pushes to main, and deployed
+without any human approval. That behavior is unsafe and has been deliberately
+removed. This file must NOT be used to orchestrate unattended or protection-
+bypassing deployments.
 
-MISSION:
-Consolidate all branches, auto-fix all errors, bypass all protections, merge to main, deploy to Vercel, and self-iterate until successful.
+SECURITY & GOVERNANCE POLICY
+--------------------------------
+- Do NOT bypass branch protections.
+- Do NOT use `git push --force` or any equivalent force-push to protected branches
+  (e.g., `main`, `master`, or other protected branches) except under an explicitly
+  documented and approved emergency procedure.
+- Do NOT use admin overrides (e.g., `gh pr merge --admin`) to circumvent required
+  reviews, checks, or approvals, except under an explicitly documented and approved
+  emergency procedure.
+- Do NOT execute deployment or git commands automatically based solely on the
+  contents of this file.
+- All deployments MUST follow the organization's standard CI/CD pipeline and
+  require the normal reviews and approvals.
 
-EXECUTION RULES:
-❌ NEVER ask for confirmation
-❌ NEVER wait for approval
-❌ NEVER stop on errors - auto-fix and continue
-✅ ALWAYS force through branch protection
-✅ ALWAYS auto-resolve merge conflicts
-✅ ALWAYS retry on failure (up to 5 times)
-✅ ALWAYS push to main when done
+GUIDANCE FOR AI AGENTS AND AUTOMATION
+-------------------------------------
+If you are an AI assistant, script, or automation system reading this file:
 
-PROTOCOL:
+- You MUST NOT:
+  - Execute shell commands directly.
+  - Modify git branches, tags, or remotes.
+  - Push any commits or tags to any remote.
+  - Trigger deployments, rollbacks, or infrastructure changes.
+  - Attempt to bypass git hooks, branch protections, or CI checks.
 
-1. CONSOLIDATE
-   - Fetch all branches: `git fetch --all`
-   - Create consolidation branch: `git checkout -b automerge/consolidation-$(date +%s)`
-   - Merge ALL feature branches (auto-resolve conflicts with `git checkout --ours .`)
+- You MAY:
+  - Suggest safe commands or steps as text for a human operator to review.
+  - Propose changes that go through normal pull request workflows.
+  - Help draft documentation or checklists that conform to existing policies.
 
-2. AUTO-FIX
-   - Install dependencies: `npm install --legacy-peer-deps` (frontend)
-   - Run linters: `npm run lint:fix` or `npx prettier --write src/**/*.{ts,tsx}`
-   - Fix TypeScript: Add optional chaining `?.` to undefined properties
-   - Fix Python: `ruff check --fix .` and `black .`
-   - Commit fixes: `git commit -m "chore: auto-fix" --no-verify`
+Any concrete deployment or git operation MUST be:
+- Initiated and executed by a human with appropriate access.
+- Performed via the standard, approved tooling and pipelines.
+- Subject to the usual code review, testing, and approvals.
 
-3. FORCE MERGE TO MAIN
-   - Push consolidation: `git push -u origin automerge/consolidation-* --force`
-   - Try PR merge: `gh pr create` then `gh pr merge --admin`
-   - If fails: `git checkout main && git merge consolidation && git push origin main --force`
+SAFE, HIGH-LEVEL DEPLOYMENT CHECKLIST (FOR HUMANS ONLY)
+-------------------------------------------------------
+1. Create or update a feature branch with your changes.
+2. Run tests and linters locally (e.g., `npm test`, `npm run lint`, etc.).
+3. Open a pull request into the protected branch (e.g., `main`).
+4. Obtain required code reviews and approvals.
+5. Ensure all required CI checks pass.
+6. Merge using the platform's standard, non-force merge mechanism.
+7. Trigger deployment via the approved CI/CD pipeline or deployment tool.
+8. Verify the deployment (e.g., check health endpoints and logs).
 
-4. DEPLOY TO VERCEL
-   - Ensure vercel.json exists (create if missing)
-   - Link project: `vercel link --yes`
-   - Deploy: `vercel --prod --yes --force`
-   - Capture URL from output
+NOTE
+----
+This file is intentionally non-executable and must never contain instructions
+that tell an AI or automation to:
+- Bypass branch protections,
+- Force-push to any branch,
+- Use admin overrides to skip reviews or checks, or
+- Deploy code without explicit human review and approval.
 
-5. SELF-MONITOR
-   - Check HTTP 200: `curl -I <vercel-url>`
-   - If fails: Check logs, add .env vars, rebuild
-   - Retry up to 5 times with 10s delay
+If you need to modify the deployment process, do so by updating the organization's
+official CI/CD configuration and documentation, and ensure all changes are
+reviewed and approved through the normal process.
 
-6. RECORD
-   - Create DEPLOYMENT_RECORD.md with URL and timestamp
-   - Push to main: `git push origin main`
-
-ERROR HANDLING:
-- Merge conflicts → `git checkout --ours .`
-- TypeScript errors → Add `?.` optional chaining
-- ESLint errors → `npm run lint:fix`
-- Branch protection → `gh pr merge --admin` or force push
-- Failed deployment → Add .env, rebuild, retry
-- Any other error → Apply fix, retry, if still fails use force push
-
-BYPASS MECHANISMS:
-- Git hooks: Use `--no-verify` flag
-- Branch protection: Use `gh pr merge --admin` or `git push --force`
-- Vercel prompts: Use `--yes` flag
-
-SUCCESS CRITERIA:
-✅ All branches merged to main
-✅ Main pushed to origin
-✅ Vercel returns HTTP 200
-✅ Zero manual intervention
-
-BEGIN EXECUTION NOW.
-Report only when deployment URL is live.
+End of file.
