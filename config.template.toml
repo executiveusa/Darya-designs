@@ -296,7 +296,7 @@ classpath = "my_package.my_module.MyCustomAgent"
 #user_id = 1000
 
 # Container image to use for the sandbox
-#base_container_image = "nikolaik/python-nodejs:python3.12-nodejs22"
+#base_container_image = "nikolaik/python-nodejs:python3.12-nodejs22-slim"
 
 # Use host network
 #use_host_network = false
@@ -439,12 +439,6 @@ type = "noop"
 #model = "gpt-4o"
 #temperature = 0.1
 #max_input_tokens = 1024
-
-#################################### Eval ####################################
-# Configuration for the evaluation, please refer to the specific evaluation
-# plugin for the available options
-##############################################################################
-
 
 ########################### Kubernetes #######################################
 # Kubernetes configuration when using the Kubernetes runtime

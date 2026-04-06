@@ -1,10 +1,14 @@
 import { Trans } from "react-i18next";
-import { OpenHandsEvent } from "#/types/v1/core";
+import React from "react";
+import { OpenHandsEvent, ObservationEvent, ActionEvent } from "#/types/v1/core";
 import { isActionEvent, isObservationEvent } from "#/types/v1/type-guards";
 import { MonoComponent } from "../../../features/chat/mono-component";
 import { PathComponent } from "../../../features/chat/path-component";
 import { getActionContent } from "./get-action-content";
 import { getObservationContent } from "./get-observation-content";
+import { TaskTrackingObservationContent } from "../task-tracking/task-tracking-observation-content";
+import { TaskTrackerObservation } from "#/types/v1/core/base/observation";
+import { SkillReadyEvent, isSkillReadyEvent } from "./create-skill-ready-event";
 import i18n from "#/i18n";
 
 const trimText = (text: string, maxLength: number): string => {
@@ -33,11 +37,23 @@ const createTitleFromKey = (
   );
 };
 
+const getSummaryTitleForActionEvent = (
+  event: ActionEvent,
+): React.ReactNode | null => {
+  const summary = event.summary?.trim().replace(/\s+/g, " ") || "";
+  return summary || null;
+};
+
 // Action Event Processing
 const getActionEventTitle = (event: OpenHandsEvent): React.ReactNode => {
   // Early return if not an action event
   if (!isActionEvent(event)) {
     return "";
+  }
+
+  const summaryTitle = getSummaryTitleForActionEvent(event);
+  if (summaryTitle) {
+    return summaryTitle;
   }
 
   const actionType = event.action.kind;
@@ -46,6 +62,7 @@ const getActionEventTitle = (event: OpenHandsEvent): React.ReactNode => {
 
   switch (actionType) {
     case "ExecuteBashAction":
+    case "TerminalAction":
       actionKey = "ACTION_MESSAGE$RUN";
       actionValues = {
         command: trimText(event.action.command, 80),
@@ -79,12 +96,39 @@ const getActionEventTitle = (event: OpenHandsEvent): React.ReactNode => {
     case "TaskTrackerAction":
       actionKey = "ACTION_MESSAGE$TASK_TRACKING";
       break;
+    case "GrepAction":
+      actionKey = "ACTION_MESSAGE$GREP";
+      actionValues = {
+        pattern:
+          "pattern" in event.action && event.action.pattern
+            ? trimText(String(event.action.pattern), 50)
+            : "",
+      };
+      break;
+    case "GlobAction":
+      actionKey = "ACTION_MESSAGE$GLOB";
+      actionValues = {
+        pattern:
+          "pattern" in event.action && event.action.pattern
+            ? trimText(String(event.action.pattern), 50)
+            : "",
+      };
+      break;
     case "BrowserNavigateAction":
+    case "BrowserClickAction":
+    case "BrowserTypeAction":
+    case "BrowserGetStateAction":
+    case "BrowserGetContentAction":
+    case "BrowserScrollAction":
+    case "BrowserGoBackAction":
+    case "BrowserListTabsAction":
+    case "BrowserSwitchTabAction":
+    case "BrowserCloseTabAction":
       actionKey = "ACTION_MESSAGE$BROWSE";
       break;
     default:
       // For unknown actions, use the type name
-      return actionType.replace("Action", "").toUpperCase();
+      return String(actionType).replace("Action", "").toUpperCase();
   }
 
   if (actionKey) {
@@ -95,10 +139,20 @@ const getActionEventTitle = (event: OpenHandsEvent): React.ReactNode => {
 };
 
 // Observation Event Processing
-const getObservationEventTitle = (event: OpenHandsEvent): React.ReactNode => {
+const getObservationEventTitle = (
+  event: OpenHandsEvent,
+  correspondingAction?: ActionEvent,
+): React.ReactNode => {
   // Early return if not an observation event
   if (!isObservationEvent(event)) {
     return "";
+  }
+
+  if (correspondingAction) {
+    const summaryTitle = getSummaryTitleForActionEvent(correspondingAction);
+    if (summaryTitle) {
+      return summaryTitle;
+    }
   }
 
   const observationType = event.observation.kind;
@@ -107,6 +161,7 @@ const getObservationEventTitle = (event: OpenHandsEvent): React.ReactNode => {
 
   switch (observationType) {
     case "ExecuteBashObservation":
+    case "TerminalObservation":
       observationKey = "OBSERVATION_MESSAGE$RUN";
       observationValues = {
         command: event.observation.command
@@ -134,8 +189,34 @@ const getObservationEventTitle = (event: OpenHandsEvent): React.ReactNode => {
     case "BrowserObservation":
       observationKey = "OBSERVATION_MESSAGE$BROWSE";
       break;
-    case "TaskTrackerObservation":
-      observationKey = "OBSERVATION_MESSAGE$TASK_TRACKING";
+    case "TaskTrackerObservation": {
+      const { command } = event.observation;
+      if (command === "plan") {
+        observationKey = "OBSERVATION_MESSAGE$TASK_TRACKING_PLAN";
+      } else {
+        // command === "view"
+        observationKey = "OBSERVATION_MESSAGE$TASK_TRACKING_VIEW";
+      }
+      break;
+    }
+    case "ThinkObservation":
+      observationKey = "OBSERVATION_MESSAGE$THINK";
+      break;
+    case "GlobObservation":
+      observationKey = "OBSERVATION_MESSAGE$GLOB";
+      observationValues = {
+        pattern: event.observation.pattern
+          ? trimText(event.observation.pattern, 50)
+          : "",
+      };
+      break;
+    case "GrepObservation":
+      observationKey = "OBSERVATION_MESSAGE$GREP";
+      observationValues = {
+        pattern: event.observation.pattern
+          ? trimText(event.observation.pattern, 50)
+          : "",
+      };
       break;
     default:
       // For unknown observations, use the type name
@@ -149,20 +230,55 @@ const getObservationEventTitle = (event: OpenHandsEvent): React.ReactNode => {
   return observationType;
 };
 
-export const getEventContent = (event: OpenHandsEvent) => {
+export const getEventContent = (
+  event: OpenHandsEvent | SkillReadyEvent,
+  correspondingAction?: ActionEvent,
+) => {
   let title: React.ReactNode = "";
-  let details: string = "";
+  let details: string | React.ReactNode = "";
 
-  if (isActionEvent(event)) {
+  // Handle Skill Ready events first
+  if (isSkillReadyEvent(event)) {
+    // Use translation key if available, otherwise use "SKILL READY"
+    const skillReadyKey = "OBSERVATION_MESSAGE$SKILL_READY";
+    if (i18n.exists(skillReadyKey)) {
+      title = createTitleFromKey(skillReadyKey, {});
+    } else {
+      title = "Skill Ready";
+    }
+    details = event._skillReadyContent;
+  } else if (isActionEvent(event)) {
     title = getActionEventTitle(event);
     details = getActionContent(event);
   } else if (isObservationEvent(event)) {
-    title = getObservationEventTitle(event);
-    details = getObservationContent(event);
+    title = getObservationEventTitle(event, correspondingAction);
+
+    // For TaskTrackerObservation, use React component instead of markdown
+    if (event.observation.kind === "TaskTrackerObservation") {
+      details = (
+        <TaskTrackingObservationContent
+          event={event as ObservationEvent<TaskTrackerObservation>}
+        />
+      );
+    } else {
+      details = getObservationContent(event);
+    }
+  } else if (
+    // Lenient fallback for action-like events that fail the strict isActionEvent() guard
+    // (e.g., missing tool_name or tool_call_id). Extract a title from the action kind
+    // so the UI shows something meaningful instead of "Unknown event".
+    event.source === "agent" &&
+    "action" in event &&
+    event.action !== null &&
+    typeof event.action === "object" &&
+    "kind" in event.action &&
+    typeof event.action.kind === "string"
+  ) {
+    title = String(event.action.kind).replace("Action", "").toUpperCase();
   }
 
   return {
     title: title || i18n.t("EVENT$UNKNOWN_EVENT"),
-    details: details || i18n.t("EVENT$UNKNOWN_EVENT"),
+    details,
   };
 };

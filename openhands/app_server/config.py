@@ -6,9 +6,11 @@ from typing import AsyncContextManager
 
 import httpx
 from fastapi import Depends, Request
-from pydantic import Field
+from pydantic import Field, SecretStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Import the event_callback module to ensure all processors are registered
+import openhands.app_server.event_callback  # noqa: F401
 from openhands.agent_server.env_parser import from_env
 from openhands.app_server.app_conversation.app_conversation_info_service import (
     AppConversationInfoService,
@@ -31,6 +33,10 @@ from openhands.app_server.event_callback.event_callback_service import (
     EventCallbackService,
     EventCallbackServiceInjector,
 )
+from openhands.app_server.pending_messages.pending_message_service import (
+    PendingMessageService,
+    PendingMessageServiceInjector,
+)
 from openhands.app_server.sandbox.sandbox_service import (
     SandboxService,
     SandboxServiceInjector,
@@ -46,12 +52,24 @@ from openhands.app_server.services.httpx_client_injector import HttpxClientInjec
 from openhands.app_server.services.injector import InjectorState
 from openhands.app_server.services.jwt_service import JwtService, JwtServiceInjector
 from openhands.app_server.user.user_context import UserContext, UserContextInjector
+from openhands.app_server.web_client.default_web_client_config_injector import (
+    DefaultWebClientConfigInjector,
+)
+from openhands.app_server.web_client.web_client_config_injector import (
+    WebClientConfigInjector,
+)
 from openhands.sdk.utils.models import OpenHandsModel
+from openhands.server.types import AppMode
+from openhands.utils.environment import StorageProvider, get_storage_provider
 
 
 def get_default_persistence_dir() -> Path:
     # Recheck env because this function is also used to generate other defaults
     persistence_dir = os.getenv('OH_PERSISTENCE_DIR')
+
+    # Legacy V0 fallback variable
+    if persistence_dir is None:
+        persistence_dir = os.getenv('FILE_STORE_PATH')
 
     if persistence_dir:
         result = Path(persistence_dir)
@@ -65,16 +83,35 @@ def get_default_persistence_dir() -> Path:
 def get_default_web_url() -> str | None:
     """Get legacy web host parameter.
 
-    If present, we assume we are running under https."""
+    If present, we assume we are running under https.
+    """
     web_host = os.getenv('WEB_HOST')
     if not web_host:
         return None
     return f'https://{web_host}'
 
 
+def get_default_permitted_cors_origins() -> list[str]:
+    """Get permitted CORS origins, falling back to legacy PERMITTED_CORS_ORIGINS env var.
+
+    The preferred configuration is via OH_PERMITTED_CORS_ORIGINS_0, _1, etc.
+    (handled by the pydantic from_env parser). This fallback supports the legacy
+    comma-separated PERMITTED_CORS_ORIGINS environment variable.
+    """
+    legacy = os.getenv('PERMITTED_CORS_ORIGINS', '')
+    if legacy:
+        return [o.strip() for o in legacy.split(',') if o.strip()]
+    return []
+
+
+def get_openhands_provider_base_url() -> str | None:
+    """Return the base URL for the OpenHands provider, if configured."""
+    return os.getenv('OPENHANDS_PROVIDER_BASE_URL') or None
+
+
 def _get_default_lifespan():
     # Check legacy parameters for saas mode. If we are in SAAS mode do not apply
-    # OSS alembic migrations
+    # OpenHands alembic migrations
     if 'saas' in (os.getenv('OPENHANDS_CONFIG_CLS') or '').lower():
         return None
     return OssAppLifespanService()
@@ -86,6 +123,18 @@ class AppServerConfig(OpenHandsModel):
         default_factory=get_default_web_url,
         description='The URL where OpenHands is running (e.g., http://localhost:3000)',
     )
+    permitted_cors_origins: list[str] = Field(
+        default_factory=get_default_permitted_cors_origins,
+        description=(
+            'Additional permitted CORS origins for both the app server and agent '
+            'server containers. Configure via OH_PERMITTED_CORS_ORIGINS_0, _1, etc. '
+            'Falls back to legacy PERMITTED_CORS_ORIGINS env var.'
+        ),
+    )
+    openhands_provider_base_url: str | None = Field(
+        default_factory=get_openhands_provider_base_url,
+        description='Base URL for the OpenHands provider',
+    )
     # Dependency Injection Injectors
     event: EventServiceInjector | None = None
     event_callback: EventCallbackServiceInjector | None = None
@@ -94,6 +143,7 @@ class AppServerConfig(OpenHandsModel):
     app_conversation_info: AppConversationInfoServiceInjector | None = None
     app_conversation_start_task: AppConversationStartTaskServiceInjector | None = None
     app_conversation: AppConversationServiceInjector | None = None
+    pending_message: PendingMessageServiceInjector | None = None
     user: UserContextInjector | None = None
     jwt: JwtServiceInjector | None = None
     httpx: HttpxClientInjector = Field(default_factory=HttpxClientInjector)
@@ -102,9 +152,12 @@ class AppServerConfig(OpenHandsModel):
             persistence_dir=get_default_persistence_dir()
         )
     )
-
     # Services
     lifespan: AppLifespanService | None = Field(default_factory=_get_default_lifespan)
+    app_mode: AppMode = AppMode.OPENHANDS
+    web_client: WebClientConfigInjector = Field(
+        default_factory=DefaultWebClientConfigInjector
+    )
 
 
 def config_from_env() -> AppServerConfig:
@@ -118,8 +171,14 @@ def config_from_env() -> AppServerConfig:
     from openhands.app_server.app_conversation.sql_app_conversation_start_task_service import (  # noqa: E501
         SQLAppConversationStartTaskServiceInjector,
     )
+    from openhands.app_server.event.aws_event_service import (
+        AwsEventServiceInjector,
+    )
     from openhands.app_server.event.filesystem_event_service import (
         FilesystemEventServiceInjector,
+    )
+    from openhands.app_server.event.google_cloud_event_service import (
+        GoogleCloudEventServiceInjector,
     )
     from openhands.app_server.event_callback.sql_event_callback_service import (
         SQLEventCallbackServiceInjector,
@@ -149,7 +208,23 @@ def config_from_env() -> AppServerConfig:
     config: AppServerConfig = from_env(AppServerConfig, 'OH')  # type: ignore
 
     if config.event is None:
-        config.event = FilesystemEventServiceInjector()
+        provider = get_storage_provider()
+
+        if provider == StorageProvider.AWS:
+            # AWS S3 storage configuration
+            bucket_name = os.environ.get('FILE_STORE_PATH')
+            if not bucket_name:
+                raise ValueError(
+                    'FILE_STORE_PATH environment variable is required for S3 storage'
+                )
+            config.event = AwsEventServiceInjector(bucket_name=bucket_name)
+        elif provider == StorageProvider.GCP:
+            # Google Cloud storage configuration
+            config.event = GoogleCloudEventServiceInjector(
+                bucket_name=os.environ.get('FILE_STORE_PATH')
+            )
+        else:
+            config.event = FilesystemEventServiceInjector()
 
     if config.event_callback is None:
         config.event_callback = SQLEventCallbackServiceInjector()
@@ -164,7 +239,51 @@ def config_from_env() -> AppServerConfig:
         elif os.getenv('RUNTIME') in ('local', 'process'):
             config.sandbox = ProcessSandboxServiceInjector()
         else:
-            config.sandbox = DockerSandboxServiceInjector()
+            # Support legacy environment variables for Docker sandbox configuration
+            docker_sandbox_kwargs: dict = {}
+            if os.getenv('SANDBOX_HOST_PORT'):
+                docker_sandbox_kwargs['host_port'] = int(
+                    os.environ['SANDBOX_HOST_PORT']
+                )
+            if os.getenv('SANDBOX_CONTAINER_URL_PATTERN'):
+                docker_sandbox_kwargs['container_url_pattern'] = os.environ[
+                    'SANDBOX_CONTAINER_URL_PATTERN'
+                ]
+            # Allow configuring sandbox startup grace period
+            # This is useful for slower machines or cloud environments where
+            # the agent-server container takes longer to initialize
+            if os.getenv('SANDBOX_STARTUP_GRACE_SECONDS'):
+                docker_sandbox_kwargs['startup_grace_seconds'] = int(
+                    os.environ['SANDBOX_STARTUP_GRACE_SECONDS']
+                )
+            # Parse SANDBOX_VOLUMES and convert to VolumeMount objects
+            # This is set by the CLI's --mount-cwd flag
+            sandbox_volumes = os.getenv('SANDBOX_VOLUMES')
+            if sandbox_volumes:
+                from openhands.app_server.sandbox.docker_sandbox_service import (
+                    VolumeMount,
+                )
+
+                mounts = []
+                for mount_spec in sandbox_volumes.split(','):
+                    mount_spec = mount_spec.strip()
+                    if not mount_spec:
+                        continue
+                    parts = mount_spec.split(':')
+                    if len(parts) >= 2:
+                        host_path = parts[0]
+                        container_path = parts[1]
+                        mode = parts[2] if len(parts) > 2 else 'rw'
+                        mounts.append(
+                            VolumeMount(
+                                host_path=host_path,
+                                container_path=container_path,
+                                mode=mode,
+                            )
+                        )
+                if mounts:
+                    docker_sandbox_kwargs['mounts'] = mounts
+            config.sandbox = DockerSandboxServiceInjector(**docker_sandbox_kwargs)
 
     if config.sandbox_spec is None:
         if os.getenv('RUNTIME') == 'remote':
@@ -183,7 +302,20 @@ def config_from_env() -> AppServerConfig:
         )
 
     if config.app_conversation is None:
-        config.app_conversation = LiveStatusAppConversationServiceInjector()
+        tavily_api_key = None
+        tavily_api_key_str = os.getenv('TAVILY_API_KEY') or os.getenv('SEARCH_API_KEY')
+        if tavily_api_key_str:
+            tavily_api_key = SecretStr(tavily_api_key_str)
+        config.app_conversation = LiveStatusAppConversationServiceInjector(
+            tavily_api_key=tavily_api_key
+        )
+
+    if config.pending_message is None:
+        from openhands.app_server.pending_messages.pending_message_service import (
+            SQLPendingMessageServiceInjector,
+        )
+
+        config.pending_message = SQLPendingMessageServiceInjector()
 
     if config.user is None:
         config.user = AuthUserContextInjector()
@@ -263,6 +395,14 @@ def get_app_conversation_service(
     return injector.context(state, request)
 
 
+def get_pending_message_service(
+    state: InjectorState, request: Request | None = None
+) -> AsyncContextManager[PendingMessageService]:
+    injector = get_global_config().pending_message
+    assert injector is not None
+    return injector.context(state, request)
+
+
 def get_user_context(
     state: InjectorState, request: Request | None = None
 ) -> AsyncContextManager[UserContext]:
@@ -334,6 +474,12 @@ def depends_app_conversation_start_task_service():
 
 def depends_app_conversation_service():
     injector = get_global_config().app_conversation
+    assert injector is not None
+    return Depends(injector.depends)
+
+
+def depends_pending_message_service():
+    injector = get_global_config().pending_message
     assert injector is not None
     return Depends(injector.depends)
 

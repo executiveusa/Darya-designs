@@ -8,9 +8,12 @@ import {
   ThinkObservation,
   BrowserObservation,
   ExecuteBashObservation,
+  TerminalObservation,
   FileEditorObservation,
   StrReplaceEditorObservation,
   TaskTrackerObservation,
+  GlobObservation,
+  GrepObservation,
 } from "#/types/v1/core/base/observation";
 
 // File Editor Observations
@@ -18,6 +21,19 @@ const getFileEditorObservationContent = (
   event: ObservationEvent<FileEditorObservation | StrReplaceEditorObservation>,
 ): string => {
   const { observation } = event;
+
+  if (observation.error) {
+    return `**Error:**\n${observation.error}`;
+  }
+
+  // Extract text content from the observation if it exists
+  const textContent =
+    "content" in observation && Array.isArray(observation.content)
+      ? observation.content
+          .filter((c) => c.type === "text")
+          .map((c) => c.text)
+          .join("\n")
+      : null;
 
   const successMessage = getObservationResult(event) === "success";
 
@@ -30,26 +46,45 @@ const getFileEditorObservationContent = (
       observation.new_content) ||
     observation.command === "view"
   ) {
-    return `\`\`\`\n${observation.output}\n\`\`\``;
+    // Prefer content over output for view commands, fallback to output if content is not available
+    const displayContent = textContent || observation.output;
+    return `\`\`\`\n${displayContent}\n\`\`\``;
   }
 
-  // For other commands, return the output as-is
-  return observation.output;
+  // For other commands, prefer content if available, otherwise use output
+  return textContent || observation.output;
 };
 
 // Command Observations
-const getExecuteBashObservationContent = (
-  event: ObservationEvent<ExecuteBashObservation>,
+const getTerminalObservationContent = (
+  event: ObservationEvent<ExecuteBashObservation | TerminalObservation>,
 ): string => {
   const { observation } = event;
 
-  let { output } = observation;
+  // Extract text content from the observation
+  const textContent = observation.content
+    .filter((c) => c.type === "text")
+    .map((c) => c.text)
+    .join("\n");
 
-  if (output.length > MAX_CONTENT_LENGTH) {
-    output = `${output.slice(0, MAX_CONTENT_LENGTH)}...`;
+  let content = textContent || "";
+
+  if (content.length > MAX_CONTENT_LENGTH) {
+    content = `${content.slice(0, MAX_CONTENT_LENGTH)}...`;
   }
 
-  return `Output:\n\`\`\`sh\n${output.trim() || i18n.t("OBSERVATION$COMMAND_NO_OUTPUT")}\n\`\`\``;
+  // Build the output string
+  let output = "";
+
+  // Display the command if available
+  if (observation.command) {
+    output += `Command: \`${observation.command}\`\n\n`;
+  }
+
+  // Display the output
+  output += `Output:\n\`\`\`sh\n${content.trim() || i18n.t("OBSERVATION$COMMAND_NO_OUTPUT")}\n\`\`\``;
+
+  return output;
 };
 
 // Tool Observations
@@ -58,13 +93,24 @@ const getBrowserObservationContent = (
 ): string => {
   const { observation } = event;
 
+  // Extract text content from the observation
+  const textContent =
+    "content" in observation && Array.isArray(observation.content)
+      ? observation.content
+          .filter((c) => c.type === "text")
+          .map((c) => c.text)
+          .join("\n")
+      : observation.output || "";
+
   let contentDetails = "";
 
-  if ("error" in observation && observation.error) {
-    contentDetails += `**Error:**\n${observation.error}\n\n`;
+  if (observation.error) {
+    contentDetails += `**Error:**\n${observation.error}`;
+  } else if (textContent) {
+    contentDetails += `**Output:**\n${textContent}`;
+  } else {
+    contentDetails += "Browser action completed successfully.";
   }
-
-  contentDetails += `**Output:**\n${observation.output}`;
 
   if (contentDetails.length > MAX_CONTENT_LENGTH) {
     contentDetails = `${contentDetails.slice(0, MAX_CONTENT_LENGTH)}...(truncated)`;
@@ -132,6 +178,7 @@ const getTaskTrackerObservationContent = (
   if (
     "content" in observation &&
     observation.content &&
+    typeof observation.content === "string" &&
     observation.content.trim()
   ) {
     content += `\n\n**Result:** ${observation.content.trim()}`;
@@ -145,14 +192,101 @@ const getThinkObservationContent = (
   event: ObservationEvent<ThinkObservation>,
 ): string => {
   const { observation } = event;
-  return observation.content || "";
+
+  const textContent = observation.content
+    .filter((c) => c.type === "text")
+    .map((c) => c.text)
+    .join("\n");
+
+  return textContent || "";
 };
 
 const getFinishObservationContent = (
   event: ObservationEvent<FinishObservation>,
 ): string => {
   const { observation } = event;
-  return observation.message || "";
+
+  // Extract text content from the observation
+  const textContent = observation.content
+    .filter((c) => c.type === "text")
+    .map((c) => c.text)
+    .join("\n");
+
+  let content = "";
+
+  if (observation.is_error) {
+    content += `**Error:**\n${textContent}`;
+  } else {
+    content += textContent;
+  }
+
+  return content;
+};
+
+// Glob Observations
+const getGlobObservationContent = (
+  event: ObservationEvent<GlobObservation>,
+): string => {
+  const { observation } = event;
+
+  // Extract text content from the observation
+  const textContent = observation.content
+    .filter((c) => c.type === "text")
+    .map((c) => c.text)
+    .join("\n");
+
+  let content = `**Pattern:** \`${observation.pattern}\`\n`;
+  content += `**Search Path:** \`${observation.search_path}\`\n\n`;
+
+  if (observation.is_error) {
+    content += `**Error:**\n${textContent}`;
+  } else if (observation.files.length === 0) {
+    content += "**Result:** No files found.";
+  } else {
+    content += `**Files Found (${observation.files.length}${observation.truncated ? "+, truncated" : ""}):**\n`;
+    content += observation.files.map((f) => `- \`${f}\``).join("\n");
+  }
+
+  if (content.length > MAX_CONTENT_LENGTH) {
+    content = `${content.slice(0, MAX_CONTENT_LENGTH)}...(truncated)`;
+  }
+
+  return content;
+};
+
+// Grep Observations
+const getGrepObservationContent = (
+  event: ObservationEvent<GrepObservation>,
+): string => {
+  const { observation } = event;
+
+  // Extract text content from the observation
+  const textContent = observation.content
+    .filter((c) => c.type === "text")
+    .map((c) => c.text)
+    .join("\n");
+
+  let content = `**Pattern:** \`${observation.pattern}\`\n`;
+  content += `**Search Path:** \`${observation.search_path}\`\n`;
+  if (observation.include_pattern) {
+    content += `**Include:** \`${observation.include_pattern}\`\n`;
+  }
+  content += "\n";
+
+  if (observation.is_error) {
+    content += `**Error:**\n${textContent}`;
+  } else if (observation.matches.length === 0) {
+    content += "**Result:** No matches found.";
+  } else {
+    content += `**Matches (${observation.matches.length}${observation.truncated ? "+, truncated" : ""}):**\n`;
+    content += observation.matches.map((f) => `- \`${f}\``).join("\n");
+  }
+
+  if (content.length > MAX_CONTENT_LENGTH) {
+    content = `${content.slice(0, MAX_CONTENT_LENGTH)}...(truncated)`;
+  }
+
+  return content;
 };
 
 export const getObservationContent = (event: ObservationEvent): string => {
@@ -168,8 +302,9 @@ export const getObservationContent = (event: ObservationEvent): string => {
       );
 
     case "ExecuteBashObservation":
-      return getExecuteBashObservationContent(
-        event as ObservationEvent<ExecuteBashObservation>,
+    case "TerminalObservation":
+      return getTerminalObservationContent(
+        event as ObservationEvent<ExecuteBashObservation | TerminalObservation>,
       );
 
     case "BrowserObservation":
@@ -195,6 +330,16 @@ export const getObservationContent = (event: ObservationEvent): string => {
     case "FinishObservation":
       return getFinishObservationContent(
         event as ObservationEvent<FinishObservation>,
+      );
+
+    case "GlobObservation":
+      return getGlobObservationContent(
+        event as ObservationEvent<GlobObservation>,
+      );
+
+    case "GrepObservation":
+      return getGrepObservationContent(
+        event as ObservationEvent<GrepObservation>,
       );
 
     default:

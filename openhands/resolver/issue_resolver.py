@@ -1,5 +1,12 @@
 # flake8: noqa: E501
 
+# IMPORTANT: LEGACY V0 CODE - Deprecated since version 1.0.0, scheduled for removal April 1, 2026
+# This file is part of the legacy (V0) implementation of OpenHands and will be removed soon as we complete the migration to V1.
+# OpenHands V1 uses the Software Agent SDK for the agentic core and runs a new application server. Please refer to:
+#   - V1 agentic core (SDK): https://github.com/OpenHands/software-agent-sdk
+#   - V1 application server (in this repo): openhands/app_server/
+# Unless you are working on deprecation, please avoid extending this legacy file and consult the V1 codepaths above.
+# Tag: Legacy-V0
 import asyncio
 import dataclasses
 import json
@@ -54,6 +61,7 @@ class IssueResolver:
 
     def __init__(self, args: Namespace) -> None:
         """Initialize the IssueResolver with the given parameters.
+
         Params initialized:
             owner: Owner of the repo.
             repo: Repository name.
@@ -81,6 +89,8 @@ class IssueResolver:
             or os.getenv('GITHUB_TOKEN')
             or os.getenv('GITLAB_TOKEN')
             or os.getenv('BITBUCKET_TOKEN')
+            or os.getenv('AZURE_DEVOPS_TOKEN')
+            or os.getenv('FORGEJO_TOKEN')
         )
         username = args.username if args.username else os.getenv('GIT_USERNAME')
         if not username:
@@ -130,6 +140,10 @@ class IssueResolver:
                 else 'gitlab.com'
                 if platform == ProviderType.GITLAB
                 else 'bitbucket.org'
+                if platform == ProviderType.BITBUCKET
+                else 'bitbucket.example.com'
+                if platform == ProviderType.BITBUCKET_DATA_CENTER
+                else 'dev.azure.com'
             )
 
         self.output_dir = args.output_dir
