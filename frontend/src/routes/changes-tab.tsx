@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 import React from "react";
 import { FileDiffViewer } from "#/components/features/diff-viewer/file-diff-viewer";
+import { EmptyChangesMessage } from "#/components/features/diff-viewer/empty-changes-message";
 import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message";
-import { useGetGitChanges } from "#/hooks/query/use-get-git-changes";
+import { useUnifiedGetGitChanges } from "#/hooks/query/use-unified-get-git-changes";
 import { I18nKey } from "#/i18n/declaration";
 import { RUNTIME_INACTIVE_STATES } from "#/types/agent-state";
 import { RandomTip } from "#/components/features/tips/random-tip";
@@ -27,7 +28,7 @@ function GitChanges() {
     isError,
     error,
     isLoading: loadingGitChanges,
-  } = useGetGitChanges();
+  } = useUnifiedGetGitChanges();
 
   const [statusMessage, setStatusMessage] = React.useState<string[] | null>(
     null,
@@ -76,6 +77,9 @@ function GitChanges() {
                   <span key={msg}>{t(msg)}</span>
                 ))}
               </StatusMessage>
+            )}
+            {!statusMessage && isSuccess && gitChanges.length === 0 && (
+              <EmptyChangesMessage />
             )}
           </div>
 

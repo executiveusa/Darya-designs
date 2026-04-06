@@ -3,13 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { createRoutesStub, Outlet } from "react-router";
-import SettingsService from "#/settings-service/settings-service.api";
-import ConversationService from "#/api/conversation-service/conversation-service.api";
+import SettingsService from "#/api/settings-service/settings-service.api";
+import V1ConversationService from "#/api/conversation-service/v1-conversation-service.api";
 import GitService from "#/api/git-service/git-service.api";
 import OptionService from "#/api/option-service/option-service.api";
 import { GitRepository } from "#/types/git";
 import { RepoConnector } from "#/components/features/home/repo-connector";
 import { MOCK_DEFAULT_USER_SETTINGS } from "#/mocks/handlers";
+import { useSelectedOrganizationStore } from "#/stores/selected-organization-store";
 
 const renderRepoConnector = () => {
   const mockRepoSelection = vi.fn();
@@ -65,12 +66,14 @@ const MOCK_RESPOSITORIES: GitRepository[] = [
 ];
 
 beforeEach(() => {
+  useSelectedOrganizationStore.setState({ organizationId: "test-org-id" });
   const getSettingsSpy = vi.spyOn(SettingsService, "getSettings");
   getSettingsSpy.mockResolvedValue({
     ...MOCK_DEFAULT_USER_SETTINGS,
     provider_tokens_set: {
       github: "some-token",
       gitlab: null,
+      azure_devops: null,
     },
   });
 });
@@ -176,10 +179,10 @@ describe("RepoConnector", () => {
 
   it("should render the 'add github repos' link in dropdown if saas mode and github provider is set", async () => {
     const getConfiSpy = vi.spyOn(OptionService, "getConfig");
-    // @ts-expect-error - only return the APP_MODE and APP_SLUG
+    // @ts-expect-error - only return the app_mode and github_app_slug
     getConfiSpy.mockResolvedValue({
-      APP_MODE: "saas",
-      APP_SLUG: "openhands",
+      app_mode: "saas",
+      github_app_slug: "openhands",
     });
 
     const getSettingsSpy = vi.spyOn(SettingsService, "getSettings");
@@ -223,10 +226,10 @@ describe("RepoConnector", () => {
 
   it("should not render the 'add github repos' link if github provider is not set", async () => {
     const getConfiSpy = vi.spyOn(OptionService, "getConfig");
-    // @ts-expect-error - only return the APP_MODE and APP_SLUG
+    // @ts-expect-error - only return the app_mode and github_app_slug for this test
     getConfiSpy.mockResolvedValue({
-      APP_MODE: "saas",
-      APP_SLUG: "openhands",
+      app_mode: "saas",
+      github_app_slug: "openhands",
     });
 
     const getSettingsSpy = vi.spyOn(SettingsService, "getSettings");
@@ -268,9 +271,9 @@ describe("RepoConnector", () => {
 
   it("should not render the 'add github repos' link in dropdown if oss mode", async () => {
     const getConfiSpy = vi.spyOn(OptionService, "getConfig");
-    // @ts-expect-error - only return the APP_MODE
+    // @ts-expect-error - only return the app_mode
     getConfiSpy.mockResolvedValue({
-      APP_MODE: "oss",
+      app_mode: "oss",
     });
 
     const getSettingsSpy = vi.spyOn(SettingsService, "getSettings");
@@ -311,23 +314,34 @@ describe("RepoConnector", () => {
   });
 
   it("should create a conversation and redirect with the selected repo when pressing the launch button", async () => {
-    const createConversationSpy = vi.spyOn(
-      ConversationService,
-      "createConversation",
-    );
-    createConversationSpy.mockResolvedValue({
-      conversation_id: "mock-conversation-id",
-      title: "Test Conversation",
-      selected_repository: "user/repo1",
-      selected_branch: "main",
-      git_provider: "github",
-      last_updated_at: "2023-01-01T00:00:00Z",
-      created_at: "2023-01-01T00:00:00Z",
-      status: "STARTING",
-      runtime_status: null,
-      url: null,
-      session_api_key: null,
-    });
+    const createConversationSpy = vi
+      .spyOn(V1ConversationService, "createConversation")
+      .mockResolvedValue({
+        id: "task-id",
+        created_by_user_id: null,
+        status: "READY",
+        detail: null,
+        app_conversation_id: "mock-conversation-id",
+        sandbox_id: null,
+        agent_server_url: "http://agent-server.local",
+        request: {
+          sandbox_id: null,
+          initial_message: null,
+          processors: [],
+          llm_model: null,
+          selected_repository: "rbren/polaris",
+          selected_branch: "main",
+          git_provider: "github",
+          suggested_task: null,
+          title: null,
+          trigger: null,
+          pr_number: [],
+          parent_conversation_id: null,
+          agent_type: "default",
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     const retrieveUserGitRepositoriesSpy = vi.spyOn(
       GitService,
       "retrieveUserGitRepositories",
@@ -387,12 +401,16 @@ describe("RepoConnector", () => {
 
     await userEvent.click(launchButton);
 
-    expect(createConversationSpy).toHaveBeenCalledExactlyOnceWith(
+    expect(createConversationSpy).toHaveBeenCalledOnce();
+    expect(createConversationSpy).toHaveBeenCalledWith(
       "rbren/polaris",
       "github",
       undefined,
-      undefined,
       "main",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       undefined,
       undefined,
     );
@@ -400,10 +418,10 @@ describe("RepoConnector", () => {
 
   it("should change the launch button text to 'Loading...' when creating a conversation", async () => {
     const createConversationSpy = vi.spyOn(
-      ConversationService,
+      V1ConversationService,
       "createConversation",
     );
-    createConversationSpy.mockImplementation(() => new Promise(() => {})); // Never resolves to keep loading state
+    createConversationSpy.mockImplementation(() => new Promise(() => { })); // Never resolves to keep loading state
     const retrieveUserGitRepositoriesSpy = vi.spyOn(
       GitService,
       "retrieveUserGitRepositories",

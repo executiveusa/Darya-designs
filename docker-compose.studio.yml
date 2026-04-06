@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  openhands-studio:
+    build:
+      context: .
+      dockerfile: containers/app/Dockerfile
+      args:
+        OPENHANDS_BUILD_VERSION: "${OPENHANDS_BUILD_VERSION:-dev}"
+    image: openhands-studio:latest
+    container_name: openhands-studio
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - openhands-workspace:/opt/workspace_base
+      - openhands-data:/.openhands
+    environment:
+      # Studio Feature Flag
+      - STUDIO_ENABLED=true
+
+      # OpenHands Configuration
+      - SANDBOX_RUNTIME_CONTAINER_IMAGE=docker.all-hands.dev/openhands/runtime:0.59-nikolaik
+      - SANDBOX_USER_ID=0
+      - WORKSPACE_BASE=/opt/workspace_base
+      - LOG_ALL_EVENTS=true
+
+      # LLM Configuration (configure as needed)
+      - LLM_MODEL=${LLM_MODEL:-anthropic/claude-3-5-sonnet-20241022}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+
+      # Server Configuration
+      - FRONTEND_PORT=3000
+      - BACKEND_HOST=0.0.0.0
+
+      # File Storage
+      - FILE_STORE=local
+      - FILE_STORE_PATH=/.openhands
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/options/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  openhands-workspace:
+    driver: local
+  openhands-data:
+    driver: local

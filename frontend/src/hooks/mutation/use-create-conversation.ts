@@ -1,11 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import posthog from "posthog-js";
 import ConversationService from "#/api/conversation-service/conversation-service.api";
 import V1ConversationService from "#/api/conversation-service/v1-conversation-service.api";
+import { PluginSpec } from "#/api/conversation-service/v1-conversation-service.types";
 import { SuggestedTask } from "#/utils/types";
-import { Provider } from "#/types/settings";
+import { Provider, Settings } from "#/types/settings";
 import { CreateMicroagent, Conversation } from "#/api/open-hands.types";
-import { USE_V1_CONVERSATION_API } from "#/utils/feature-flags";
+import { useTracking } from "#/hooks/use-tracking";
+import { getSettingsQueryFn } from "#/hooks/query/use-settings";
+import { DEFAULT_SETTINGS } from "#/services/settings";
+import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 
 interface CreateConversationVariables {
   query?: string;
@@ -17,6 +20,9 @@ interface CreateConversationVariables {
   suggestedTask?: SuggestedTask;
   conversationInstructions?: string;
   createMicroagent?: CreateMicroagent;
+  parentConversationId?: string;
+  agentType?: "default" | "plan";
+  plugins?: PluginSpec[];
 }
 
 // Response type that combines both V1 and legacy responses
@@ -31,6 +37,8 @@ interface CreateConversationResponse extends Partial<Conversation> {
 
 export const useCreateConversation = () => {
   const queryClient = useQueryClient();
+  const { trackConversationCreated } = useTracking();
+  const { organizationId } = useSelectedOrganizationId();
 
   return useMutation({
     mutationKey: ["create-conversation"],
@@ -43,9 +51,25 @@ export const useCreateConversation = () => {
         suggestedTask,
         conversationInstructions,
         createMicroagent,
+        parentConversationId,
+        agentType,
+        plugins,
       } = variables;
 
-      const useV1 = USE_V1_CONVERSATION_API();
+      // Wait for settings to be loaded before deciding V0 vs V1
+      let settings: Settings;
+      try {
+        settings = await queryClient.ensureQueryData<Settings>({
+          queryKey: ["settings", organizationId],
+          queryFn: getSettingsQueryFn,
+          staleTime: 1000 * 60 * 5,
+        });
+      } catch {
+        // Settings fetch failed (e.g., 404 for new user) — use defaults
+        settings = DEFAULT_SETTINGS;
+      }
+
+      const useV1 = settings.v1_enabled && !createMicroagent;
 
       if (useV1) {
         // Use V1 API - creates a conversation start task
@@ -55,7 +79,11 @@ export const useCreateConversation = () => {
           query,
           repository?.branch,
           conversationInstructions,
-          undefined, // trigger - will be set by backend
+          suggestedTask,
+          undefined, // trigger - set by backend when applicable
+          parentConversationId,
+          agentType,
+          plugins,
         );
 
         // Return a special task ID that the frontend will recognize
@@ -86,12 +114,11 @@ export const useCreateConversation = () => {
         is_v1: false,
       };
     },
-    onSuccess: async (_, { query, repository }) => {
-      posthog.capture("initial_query_submitted", {
-        entry_point: "task_form",
-        query_character_length: query?.length,
-        has_repository: !!repository,
+    onSuccess: async (_, { repository }) => {
+      trackConversationCreated({
+        hasRepository: !!repository,
       });
+
       queryClient.removeQueries({
         queryKey: ["user", "conversations"],
       });

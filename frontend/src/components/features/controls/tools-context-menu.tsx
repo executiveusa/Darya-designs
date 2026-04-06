@@ -26,22 +26,25 @@ const contextMenuListItemClassName = cn(
 
 interface ToolsContextMenuProps {
   onClose: () => void;
-  onShowMicroagents: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onShowSkills: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onShowHooks: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onShowAgentTools: (event: React.MouseEvent<HTMLButtonElement>) => void;
   shouldShowAgentTools?: boolean;
+  shouldShowHooks?: boolean;
 }
 
 export function ToolsContextMenu({
   onClose,
-  onShowMicroagents,
+  onShowSkills,
+  onShowHooks,
   onShowAgentTools,
   shouldShowAgentTools = true,
+  shouldShowHooks = false,
 }: ToolsContextMenuProps) {
   const { t } = useTranslation();
   const { data: conversation } = useActiveConversation();
   const { providers } = useUserProviders();
 
-  // TODO: Hide microagent menu items for V1 conversations
   // This is a temporary measure and may be re-enabled in the future
   const isV1Conversation = conversation?.conversation_version === "V1";
 
@@ -130,16 +133,28 @@ export function ToolsContextMenu({
 
       {(!isV1Conversation || shouldShowAgentTools) && <Divider />}
 
-      {/* Show Available Microagents - Hidden for V1 conversations */}
-      {!isV1Conversation && (
+      <ContextMenuListItem
+        testId="show-skills-button"
+        onClick={onShowSkills}
+        className={contextMenuListItemClassName}
+      >
+        <ToolsContextMenuIconText
+          icon={<RobotIcon width={16} height={16} />}
+          text={t(I18nKey.CONVERSATION$SHOW_SKILLS)}
+          className={CONTEXT_MENU_ICON_TEXT_CLASSNAME}
+        />
+      </ContextMenuListItem>
+
+      {/* Show Hooks - Only show for V1 conversations */}
+      {shouldShowHooks && (
         <ContextMenuListItem
-          testId="show-microagents-button"
-          onClick={onShowMicroagents}
+          testId="show-hooks-button"
+          onClick={onShowHooks}
           className={contextMenuListItemClassName}
         >
           <ToolsContextMenuIconText
-            icon={<RobotIcon width={16} height={16} />}
-            text={t(I18nKey.CONVERSATION$SHOW_MICROAGENTS)}
+            icon={<ToolsIcon width={16} height={16} />}
+            text={t(I18nKey.CONVERSATION$SHOW_HOOKS)}
             className={CONTEXT_MENU_ICON_TEXT_CLASSNAME}
           />
         </ContextMenuListItem>

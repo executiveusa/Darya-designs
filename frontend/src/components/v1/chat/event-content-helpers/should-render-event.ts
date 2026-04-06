@@ -5,18 +5,8 @@ import {
   isMessageEvent,
   isAgentErrorEvent,
   isConversationStateUpdateEvent,
+  isHookExecutionEvent,
 } from "#/types/v1/type-guards";
-
-// V1 events that should not be rendered
-const NO_RENDER_ACTION_TYPES = [
-  "ThinkAction",
-  // Add more action types that should not be rendered
-];
-
-const NO_RENDER_OBSERVATION_TYPES = [
-  "ThinkObservation",
-  // Add more observation types that should not be rendered
-];
 
 export const shouldRenderEvent = (event: OpenHandsEvent) => {
   // Explicitly exclude system events that should not be rendered in chat
@@ -29,23 +19,26 @@ export const shouldRenderEvent = (event: OpenHandsEvent) => {
     // For V1, action is an object with kind property
     const actionType = event.action.kind;
 
+    if (!actionType) {
+      return false;
+    }
+
     // Hide user commands from the chat interface
     if (actionType === "ExecuteBashAction" && event.source === "user") {
       return false;
     }
 
-    return !NO_RENDER_ACTION_TYPES.includes(actionType);
+    // Hide PlanningFileEditorAction - handled separately with PlanPreview component
+    if (actionType === "PlanningFileEditorAction") {
+      return false;
+    }
+
+    return true;
   }
 
-  // Render observation events (with filtering)
+  // Render observation events
   if (isObservationEvent(event)) {
-    // For V1, observation is an object with kind property
-    const observationType = event.observation.kind;
-
-    // Note: ObservationEvent source is always "environment", not "user"
-    // So no need to check for user source here
-
-    return !NO_RENDER_OBSERVATION_TYPES.includes(observationType);
+    return true;
   }
 
   // Render message events (user and assistant messages)
@@ -55,6 +48,11 @@ export const shouldRenderEvent = (event: OpenHandsEvent) => {
 
   // Render agent error events
   if (isAgentErrorEvent(event)) {
+    return true;
+  }
+
+  // Render hook execution events
+  if (isHookExecutionEvent(event)) {
     return true;
   }
 

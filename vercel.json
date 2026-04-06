@@ -1,32 +1,60 @@
 {
   "version": 2,
+  "name": "openhands-studio",
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/build",
+  "framework": null,
+  "devCommand": "cd frontend && npm run dev",
   "env": {
-    "VITE_BACKEND_BASE_URL": "localhost:3000",
-    "VITE_BACKEND_HOST": "127.0.0.1:3000",
-    "VITE_MOCK_API": "true",
-    "VITE_MOCK_SAAS": "true",
-    "VITE_USE_TLS": "false",
-    "VITE_FRONTEND_PORT": "3001",
-    "VITE_INSECURE_SKIP_VERIFY": "false",
-    "NODE_VERSION": "22.0.0"
+    "VITE_BACKEND_HOST": "@backend_host",
+    "VITE_USE_TLS": "true"
   },
+  "build": {
+    "env": {
+      "VITE_BACKEND_HOST": "@backend_host",
+      "VITE_USE_TLS": "true"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://@backend_host/api/:path*"
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": "https://@backend_host/socket.io/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
     {
       "source": "/api/(.*)",
       "headers": [
         {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }

@@ -110,13 +110,16 @@ lines.append(
     'OPENHANDS_BITBUCKET_SERVICE_CLS=integrations.bitbucket.bitbucket_service.SaaSBitBucketService'
 )
 lines.append(
+    'OPENHANDS_BITBUCKET_DATA_CENTER_SERVICE_CLS=integrations.bitbucket_data_center.bitbucket_dc_service.SaaSBitbucketDCService'
+)
+lines.append(
     'OPENHANDS_CONVERSATION_VALIDATOR_CLS=storage.saas_conversation_validator.SaasConversationValidator'
 )
 lines.append('POSTHOG_CLIENT_KEY=test')
 lines.append('ENABLE_PROACTIVE_CONVERSATION_STARTERS=true')
 lines.append('MAX_CONCURRENT_CONVERSATIONS=10')
 lines.append('LITE_LLM_API_URL=https://llm-proxy.eval.all-hands.dev')
-lines.append('LITELLM_DEFAULT_MODEL=litellm_proxy/claude-sonnet-4-20250514')
+lines.append('LITELLM_DEFAULT_MODEL=litellm_proxy/claude-opus-4-5-20251101')
 lines.append(f'LITE_LLM_API_KEY={lite_llm_api_key}')
 lines.append('LOCAL_DEPLOYMENT=true')
 lines.append('DB_HOST=localhost')

@@ -51,6 +51,14 @@ def custom_json_serializer(obj, **kwargs):
                 obj['stack_info'] = format_stack(stack_info)
 
     result = json.dumps(obj, **kwargs)
+
+    # Swap out newlines to make things easier to read. This will produce
+    # invalid json but means we can have similar logs in local development
+    # to production, making things easier to correlate. Obviously,
+    # LOG_JSON_FOR_CONSOLE should not be used in production environments.
+    if LOG_JSON_FOR_CONSOLE:
+        result = result.replace('\\n', '\n')
+
     return result
 
 
@@ -72,10 +80,11 @@ def setup_json_logger(
     handler.setLevel(level)
 
     formatter = JsonFormatter(
-        '{message}{levelname}',
-        style='{',
+        '%(message)s%(levelname)s%(module)s%(funcName)s%(lineno)d',
         rename_fields={'levelname': 'severity'},
         json_serializer=custom_json_serializer,
+        # Use 'ts' for consistency with LOG_JSON_FOR_CONSOLE mode (skip when console mode to avoid duplicates)
+        timestamp='ts' if not LOG_JSON_FOR_CONSOLE else False,
     )
 
     handler.setFormatter(formatter)

@@ -1,0 +1,23 @@
+# Exclude Python backend - Vercel deploys frontend only
+openhands/
+openhands-cli/
+openhands-ui/
+third_party/
+tests/
+evaluation/
+containers/
+.openhands/
+kind/
+microagents/
+scripts/
+pyproject.toml
+poetry.lock
+Makefile
+*.md
+!README.md
+
+# Keep frontend
+!frontend/
+!vercel.json
+!.vercelignore
+

@@ -1,3 +1,11 @@
+# IMPORTANT: LEGACY V0 CODE - Deprecated since version 1.0.0, scheduled for removal April 1, 2026
+# This file is part of the legacy (V0) implementation of OpenHands and will be removed soon as we complete the migration to V1.
+# OpenHands V1 uses the Software Agent SDK for the agentic core and runs a new application server. Please refer to:
+#   - V1 agentic core (SDK): https://github.com/OpenHands/software-agent-sdk
+#   - V1 application server (in this repo): openhands/app_server/
+# Unless you are working on deprecation, please avoid extending this legacy file and consult the V1 codepaths above.
+# Tag: Legacy-V0
+# V1 replacement for this module lives in the Software Agent SDK.
 from __future__ import annotations
 
 import asyncio
@@ -56,11 +64,14 @@ from openhands.events.action import (
     AgentFinishAction,
     AgentRejectAction,
     BrowseInteractiveAction,
+    BrowseURLAction,
     ChangeAgentStateAction,
     CmdRunAction,
     FileEditAction,
     FileReadAction,
+    FileWriteAction,
     IPythonRunCellAction,
+    MCPAction,
     MessageAction,
     NullAction,
     SystemMessageAction,
@@ -877,7 +888,7 @@ class AgentController:
 
         # Synchronize spend across all llm services with the budget flag
         self.state_tracker.sync_budget_flag_with_metrics()
-        if self._is_stuck():
+        if self.agent.config.enable_stuck_detection and self._is_stuck():
             await self._react_to_exception(
                 AgentStuckInLoopError('Agent got stuck in a loop')
             )
@@ -944,6 +955,23 @@ class AgentController:
                         return
                     else:
                         raise LLMContextWindowExceedError()
+                # Check if this is a tool call validation error that should be recoverable
+                elif (
+                    isinstance(e, BadRequestError)
+                    and 'tool call validation failed' in error_str
+                    and (
+                        'missing properties' in error_str
+                        or 'missing required' in error_str
+                    )
+                ):
+                    # Handle tool call validation errors from Groq as recoverable errors
+                    self.event_stream.add_event(
+                        ErrorObservation(
+                            content=f'Tool call validation failed: {str(e)}. Please check the tool parameters and try again.',
+                        ),
+                        EventSource.AGENT,
+                    )
+                    return
                 else:
                     raise e
 
@@ -952,8 +980,11 @@ class AgentController:
                 type(action) is CmdRunAction
                 or type(action) is IPythonRunCellAction
                 or type(action) is BrowseInteractiveAction
+                or type(action) is BrowseURLAction
                 or type(action) is FileEditAction
                 or type(action) is FileReadAction
+                or type(action) is FileWriteAction
+                or type(action) is MCPAction
             ):
                 # Handle security risk analysis using the dedicated method
                 await self._handle_security_analyzer(action)

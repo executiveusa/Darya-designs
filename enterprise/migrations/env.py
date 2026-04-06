@@ -1,10 +1,15 @@
+import logging
 import os
 from logging.config import fileConfig
 
-from alembic import context
-from google.cloud.sql.connector import Connector
-from sqlalchemy import create_engine
-from storage.base import Base
+# Suppress alembic.runtime.plugins INFO logs during import to prevent non-JSON logs in production
+# These plugin setup messages would otherwise appear before logging is configured
+logging.getLogger('alembic.runtime.plugins').setLevel(logging.WARNING)
+
+from alembic import context  # noqa: E402
+from google.cloud.sql.connector import Connector  # noqa: E402
+from sqlalchemy import create_engine, text  # noqa: E402
+from storage.base import Base  # noqa: E402
 
 target_metadata = Base.metadata
 
@@ -103,6 +108,10 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             version_table_schema=target_metadata.schema,
         )
+
+        # Lock number must be unique — md5 hash of 'openhands_enterprise_migrations'
+        # Lock is released when the connection context manager exits
+        connection.execute(text('SELECT pg_advisory_lock(3617572382373537863)'))
 
         with context.begin_transaction():
             context.run_migrations()

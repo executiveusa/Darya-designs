@@ -53,7 +53,7 @@ export type EventID = string;
 export type ToolCallID = string;
 
 // Source type for events
-export type SourceType = "agent" | "user" | "environment";
+export type SourceType = "agent" | "user" | "environment" | "hook";
 
 // Security risk levels
 export enum SecurityRisk {
@@ -64,7 +64,7 @@ export enum SecurityRisk {
 }
 
 // Agent status
-export enum V1AgentStatus {
+export enum V1ExecutionStatus {
   IDLE = "idle",
   RUNNING = "running",
   PAUSED = "paused",
