@@ -236,6 +236,7 @@ redis = ">=5.2,<7.0"
 
 google-cloud-aiplatform = "*"
 anthropic = { extras = [ "vertex" ], version = "*" }
+vibetensor = { git = "https://github.com/NVlabs/vibetensor.git", branch = "main" }
 boto3 = "*"
 kubernetes = "^33.1.0"
 pyyaml = "^6.0.2"
